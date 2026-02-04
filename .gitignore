@@ -1,0 +1,30 @@
+# Build outputs
+dist/
+*.exe
+*.msi
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log
+
+# Rust/Cargo
+src-tauri/target/
+Cargo.lock
+*.rlib
+*.rmeta
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development
+*.log
+.env.local

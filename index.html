@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWM - GvG Strategy</title>
+    <link rel="stylesheet" href="styles-fixed.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111827">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Where Winds Meet - Guild War Strategy</h1>
+            <p class="subtitle">Guild vs Guild Battle Map (Max 30 Players) • <span class="copyright">Made by Will - MaiMaiYeuEm</span></p>
+            <div class="header-buttons">
+                <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Dark/Light Theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <div class="menu-dropdown">
+                    <button id="menuBtn" class="menu-btn" title="Menu">
+                        <span class="menu-icon">☰</span>
+                    </button>
+                    <div class="menu-content" id="menuContent">
+                        <button id="exportBtn" class="menu-item">📥 Export Strategy</button>
+                        <button id="importBtn" class="menu-item">📤 Import Strategy</button>
+                        <button id="hotKeyBtn" class="menu-item">⌨️ Hot Keys</button>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+        </header>
+        
+        <div class="main-content">
+            <!-- Member List Panel -->
+            <div class="member-panel" id="memberPanel">
+                <div class="panel-content">
+                    <h2>Guild Members <span id="playerCount">(0/30)</span>
+                        <button id="managePlayersBtn" class="manage-players-btn" title="Manage Players">⚙️</button>
+                    </h2>
+                <div class="enemy-section">
+                    <button id="addEnemiesBtn" class="add-enemies-btn">
+                        ⚔️ Add 5 Enemies (<span id="enemyCount">0</span>/30)
+                    </button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search players...">
+                </div>
+                <div class="view-toggle">
+                    <button class="view-toggle-btn active" data-view="grouped">Grouped by Team</button>
+                    <button class="view-toggle-btn" data-view="list">All Players</button>
+                </div>
+                <div class="role-filters">
+                    <button class="role-filter-btn active" data-role="all">All Roles</button>
+                    <button class="role-filter-btn" data-role="Tank">Tank</button>
+                    <button class="role-filter-btn" data-role="DPS">DPS</button>
+                    <button class="role-filter-btn" data-role="Healer">Healer</button>
+                </div>
+                    <div id="memberList" class="member-list"></div>
+                </div>
+            </div>
+            
+            <!-- Map Area -->
+            <div class="map-panel">
+                <h2>Battle Map <span id="placedCount">(0/30 Placed)</span></h2>
+                <div id="selectionHint" class="selection-hint" style="display: none;">
+                    ✓ Player selected - Click on map to place
+                </div>
+                
+                <div id="mapArea" class="map-area">
+                    <canvas id="drawingCanvas" class="drawing-canvas"></canvas>
+                    <div class="map-placeholder">
+                        <p class="instruction">Click a player from the list, then click on the map to place them</p>
+                    </div>
+                </div>
+                
+                <!-- Tools Toolbar at Bottom -->
+                <div class="bottom-toolbar" id="toolsToolbar">
+                    <div class="toolbar-buttons">
+                        <button id="addObjectiveBtn" class="toolbar-btn objective-btn" title="Add Objective Marker">
+                            <span class="btn-icon">🎯</span>
+                        </button>
+                        <button id="addBossBtn" class="toolbar-btn boss-btn" title="Add Boss Marker">
+                            <img src="images/boss.png" alt="Boss" class="btn-icon-img">
+                        </button>
+                        <button id="addBlueTowerBtn" class="toolbar-btn blue-tower-btn" title="Add Ally Tower (Blue)">
+                            <img src="images/tower_blue.png" alt="Blue Tower" class="btn-icon-img">
+                        </button>
+                        <button id="addRedTowerBtn" class="toolbar-btn red-tower-btn" title="Add Enemy Tower (Red)">
+                            <img src="images/tower_red.png" alt="Red Tower" class="btn-icon-img">
+                        </button>
+                        <button id="addBlueTreeBtn" class="toolbar-btn blue-tree-btn" title="Add Ally Tree (Blue)">
+                            <img src="images/tree_blue.png" alt="Blue Tree" class="btn-icon-img">
+                        </button>
+                        <button id="addRedTreeBtn" class="toolbar-btn red-tree-btn" title="Add Enemy Tree (Red)">
+                            <img src="images/tree_red.png" alt="Red Tree" class="btn-icon-img">
+                        </button>
+                        <button id="addBlueGooseBtn" class="toolbar-btn blue-goose-btn" title="Add Ally Goose (Blue)">
+                            <img src="images/goose_blue.png" alt="Blue Goose" class="btn-icon-img">
+                        </button>
+                        <button id="addRedGooseBtn" class="toolbar-btn red-goose-btn" title="Add Enemy Goose (Red)">
+                            <img src="images/goose_red.png" alt="Red Goose" class="btn-icon-img">
+                        </button>
+                        
+                        <div class="toolbar-divider"></div>
+                        
+                        <button id="drawBtn" class="toolbar-btn draw-btn" title="Toggle Draw Mode">
+                            <span class="btn-icon">✏️</span>
+                        </button>
+                        <div class="toolbar-color-picker">
+                            <label for="drawColorPicker" class="color-picker-label" title="Choose Drawing Color">
+                                <input type="color" id="drawColorPicker" value="#ff0000">
+                            </label>
+                        </div>
+                        <button id="undoDrawBtn" class="toolbar-btn undo-btn" title="Undo Drawing" disabled>
+                            <span class="btn-icon">↶</span>
+                        </button>
+                        <button id="redoDrawBtn" class="toolbar-btn redo-btn" title="Redo Drawing" disabled>
+                            <span class="btn-icon">↷</span>
+                        </button>
+                        <button id="clearDrawBtn" class="toolbar-btn clear-draw-btn" title="Clear All Drawings">
+                            <span class="btn-icon">🧹</span>
+                        </button>
+                        <div class="toolbar-toggle-option">
+                            <label class="toggle-label-small" title="Auto-delete drawings after 10 seconds">
+                                <input type="checkbox" id="autoDeleteToggle" />
+                                <span class="toggle-slider-small"></span>
+                                <span class="toggle-text-small">Auto-delete</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toolbar-divider"></div>
+                        
+                        <button id="clearMapBtn" class="toolbar-btn clear-btn" title="Clear All Placements">
+                            <span class="btn-icon">❌</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Player Management Popup -->
+    <div id="playerManagementModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manage Players</h2>
+                <button class="modal-close" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-toolbar">
+                    <button id="addNewPlayerBtn" class="btn-primary">+ Add New Player</button>
+                </div>
+                
+                <div class="player-management-list" id="playerManagementList">
+                    <!-- Players will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Player Edit Form Popup -->
+    <div id="playerEditModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="editModalTitle">Add New Player</h2>
+                <button class="modal-close" id="closeEditModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="playerEditForm">
+                    <input type="hidden" id="editPlayerId" value="">
+                    <div class="form-group">
+                        <label for="editPlayerName">Name:</label>
+                        <input type="text" id="editPlayerName" required maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPlayerRole">Role:</label>
+                        <select id="editPlayerRole" required>
+                            <option value="Tank">Tank</option>
+                            <option value="DPS">DPS</option>
+                            <option value="Healer">Healer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPlayerTeam">Team:</label>
+                        <select id="editPlayerTeam" required>
+                            <option value="Team 1">Team 1</option>
+                            <option value="Team 2">Team 2</option>
+                            <option value="Team 3">Team 3</option>
+                            <option value="Team 4">Team 4</option>
+                            <option value="Team 5">Team 5</option>
+                            <option value="Team 6">Team 6</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPlayerWeapon1">Weapon 1:</label>
+                        <select id="editPlayerWeapon1" required>
+                            <option value="Nameless Sword">Nameless Sword</option>
+                            <option value="Nameless Spear">Nameless Spear</option>
+                            <option value="Stormbreaker Spear">Stormbreaker Spear</option>
+                            <option value="Thundercry Blade">Thundercry Blade</option>
+                            <option value="Infernal Twinblades">Infernal Twinblades</option>
+                            <option value="Mortal Rope Dart">Mortal Rope Dart</option>
+                            <option value="Vernal Umbrella">Vernal Umbrella</option>
+                            <option value="Inkwell Fan">Inkwell Fan</option>
+                            <option value="Panacea Fan">Panacea Fan</option>
+                            <option value="Soulshade Umbrella">Soulshade Umbrella</option>
+                            <option value="Heavenquaker Spear">Heavenquaker Spear</option>
+                            <option value="Strategic Sword">Strategic Sword</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPlayerWeapon2">Weapon 2:</label>
+                        <select id="editPlayerWeapon2" required>
+                            <option value="Nameless Sword">Nameless Sword</option>
+                            <option value="Nameless Spear">Nameless Spear</option>
+                            <option value="Stormbreaker Spear">Stormbreaker Spear</option>
+                            <option value="Thundercry Blade">Thundercry Blade</option>
+                            <option value="Infernal Twinblades">Infernal Twinblades</option>
+                            <option value="Mortal Rope Dart">Mortal Rope Dart</option>
+                            <option value="Vernal Umbrella">Vernal Umbrella</option>
+                            <option value="Inkwell Fan">Inkwell Fan</option>
+                            <option value="Panacea Fan">Panacea Fan</option>
+                            <option value="Soulshade Umbrella">Soulshade Umbrella</option>
+                            <option value="Heavenquaker Spear">Heavenquaker Spear</option>
+                            <option value="Strategic Sword">Strategic Sword</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+                        <button type="submit" class="btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="confirmModalTitle">Confirm Action</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="confirmCancelBtn">Cancel</button>
+                <button class="btn-danger" id="confirmOkBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Prompt Modal -->
+    <div id="promptModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="promptModalTitle">Input</h2>
+            </div>
+            <div class="modal-body">
+                <p id="promptModalMessage"></p>
+                <input type="text" id="promptModalInput" class="prompt-input" placeholder="Enter value...">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="promptCancelBtn">Cancel</button>
+                <button class="btn-primary" id="promptOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hotkey Help Modal -->
+    <div id="hotkeyHelpModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button class="modal-close" id="closeHotkeyModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="hotkey-list">
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Shift + ?</span>
+                        <span class="hotkey-desc">Show this help</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">O</span>
+                        <span class="hotkey-desc">Add Objective</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">B</span>
+                        <span class="hotkey-desc">Add Boss</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">1</span>
+                        <span class="hotkey-desc">Add Blue Tower (Ally)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">2</span>
+                        <span class="hotkey-desc">Add Red Tower (Enemy)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">3</span>
+                        <span class="hotkey-desc">Add Blue Tree (Ally)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">4</span>
+                        <span class="hotkey-desc">Add Red Tree (Enemy)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">5</span>
+                        <span class="hotkey-desc">Add Blue Goose (Ally)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">6</span>
+                        <span class="hotkey-desc">Add Red Goose (Enemy)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">D</span>
+                        <span class="hotkey-desc">Toggle Draw Mode</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Ctrl + Z</span>
+                        <span class="hotkey-desc">Undo Drawing</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Ctrl + Y</span>
+                        <span class="hotkey-desc">Redo Drawing</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Esc</span>
+                        <span class="hotkey-desc">Deselect Tool</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
+</body>
+</html>

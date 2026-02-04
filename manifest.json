@@ -1,0 +1,15 @@
+{
+  "name": "WWM - GvG Strategy",
+  "short_name": "WWM GvG",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "images/map.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

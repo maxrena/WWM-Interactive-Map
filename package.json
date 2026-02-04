@@ -1,0 +1,36 @@
+{
+  "name": "wwm-gvg-strategy",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri",
+    "electron": "electron .",
+    "electron:dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.wwm.gvg.strategy",
+    "productName": "WWM GvG Strategy",
+    "files": [
+      "**/*",
+      "!src-tauri/**",
+      "!node_modules/.cache/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.11",
+    "electron": "^32.2.0",
+    "electron-builder": "^24.13.3"
+  }
+}
