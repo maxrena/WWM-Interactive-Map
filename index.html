@@ -31,111 +31,125 @@
             <input type="file" id="importFileInput" accept=".json" style="display: none;">
         </header>
         
-        <div class="main-content">
-            <!-- Member List Panel -->
-            <div class="member-panel" id="memberPanel">
-                <div class="panel-content">
-                    <h2>Guild Members <span id="playerCount">(0/30)</span>
-                        <button id="managePlayersBtn" class="manage-players-btn" title="Manage Players">⚙️</button>
-                    </h2>
-                <div class="enemy-section">
-                    <button id="addEnemiesBtn" class="add-enemies-btn">
-                        ⚔️ Add 5 Enemies (<span id="enemyCount">0</span>/30)
-                    </button>
+        <div class="tab-bar" role="tablist" aria-label="Main tabs">
+            <button class="tab-btn active" data-tab="map" role="tab" aria-selected="true">Map</button>
+            <button class="tab-btn" data-tab="roster" role="tab" aria-selected="false">Roster</button>
+        </div>
+
+        <div class="tab-content active" id="tab-map" role="tabpanel">
+            <div class="main-content">
+                <!-- Member List Panel -->
+                <div class="member-panel" id="memberPanel">
+                    <div class="panel-content">
+                        <h2>Guild Members <span id="playerCount">(0/30)</span>
+                            <button id="managePlayersBtn" class="manage-players-btn" title="Manage Players">⚙️</button>
+                        </h2>
+                    <div class="enemy-section">
+                        <button id="addEnemiesBtn" class="add-enemies-btn">
+                            ⚔️ Add 5 Enemies (<span id="enemyCount">0</span>/30)
+                        </button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search players...">
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn active" data-view="grouped">Grouped by Team</button>
+                        <button class="view-toggle-btn" data-view="list">All Players</button>
+                    </div>
+                    <div class="role-filters">
+                        <button class="role-filter-btn active" data-role="all">All Roles</button>
+                        <button class="role-filter-btn" data-role="Tank">Tank</button>
+                        <button class="role-filter-btn" data-role="DPS">DPS</button>
+                        <button class="role-filter-btn" data-role="Healer">Healer</button>
+                    </div>
+                        <div id="memberList" class="member-list"></div>
+                    </div>
                 </div>
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Search players...">
-                </div>
-                <div class="view-toggle">
-                    <button class="view-toggle-btn active" data-view="grouped">Grouped by Team</button>
-                    <button class="view-toggle-btn" data-view="list">All Players</button>
-                </div>
-                <div class="role-filters">
-                    <button class="role-filter-btn active" data-role="all">All Roles</button>
-                    <button class="role-filter-btn" data-role="Tank">Tank</button>
-                    <button class="role-filter-btn" data-role="DPS">DPS</button>
-                    <button class="role-filter-btn" data-role="Healer">Healer</button>
-                </div>
-                    <div id="memberList" class="member-list"></div>
+                
+                <!-- Map Area -->
+                <div class="map-panel">
+                    <h2>Battle Map <span id="placedCount">(0/30 Placed)</span></h2>
+                    <div id="selectionHint" class="selection-hint" style="display: none;">
+                        ✓ Player selected - Click on map to place
+                    </div>
+                    
+                    <div id="mapArea" class="map-area">
+                        <canvas id="drawingCanvas" class="drawing-canvas"></canvas>
+                        <div class="map-placeholder">
+                            <p class="instruction">Click a player from the list, then click on the map to place them</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Tools Toolbar at Bottom -->
+                    <div class="bottom-toolbar" id="toolsToolbar">
+                        <div class="toolbar-buttons">
+                            <button id="addObjectiveBtn" class="toolbar-btn objective-btn" title="Add Objective Marker">
+                                <span class="btn-icon">🎯</span>
+                            </button>
+                            <button id="addBossBtn" class="toolbar-btn boss-btn" title="Add Boss Marker">
+                                <img src="images/boss.png" alt="Boss" class="btn-icon-img">
+                            </button>
+                            <button id="addBlueTowerBtn" class="toolbar-btn blue-tower-btn" title="Add Ally Tower (Blue)">
+                                <img src="images/tower_blue.png" alt="Blue Tower" class="btn-icon-img">
+                            </button>
+                            <button id="addRedTowerBtn" class="toolbar-btn red-tower-btn" title="Add Enemy Tower (Red)">
+                                <img src="images/tower_red.png" alt="Red Tower" class="btn-icon-img">
+                            </button>
+                            <button id="addBlueTreeBtn" class="toolbar-btn blue-tree-btn" title="Add Ally Tree (Blue)">
+                                <img src="images/tree_blue.png" alt="Blue Tree" class="btn-icon-img">
+                            </button>
+                            <button id="addRedTreeBtn" class="toolbar-btn red-tree-btn" title="Add Enemy Tree (Red)">
+                                <img src="images/tree_red.png" alt="Red Tree" class="btn-icon-img">
+                            </button>
+                            <button id="addBlueGooseBtn" class="toolbar-btn blue-goose-btn" title="Add Ally Goose (Blue)">
+                                <img src="images/goose_blue.png" alt="Blue Goose" class="btn-icon-img">
+                            </button>
+                            <button id="addRedGooseBtn" class="toolbar-btn red-goose-btn" title="Add Enemy Goose (Red)">
+                                <img src="images/goose_red.png" alt="Red Goose" class="btn-icon-img">
+                            </button>
+                            
+                            <div class="toolbar-divider"></div>
+                            
+                            <button id="drawBtn" class="toolbar-btn draw-btn" title="Toggle Draw Mode">
+                                <span class="btn-icon">✏️</span>
+                            </button>
+                            <div class="toolbar-color-picker">
+                                <label for="drawColorPicker" class="color-picker-label" title="Choose Drawing Color">
+                                    <input type="color" id="drawColorPicker" value="#ff0000">
+                                </label>
+                            </div>
+                            <button id="undoDrawBtn" class="toolbar-btn undo-btn" title="Undo Drawing" disabled>
+                                <span class="btn-icon">↶</span>
+                            </button>
+                            <button id="redoDrawBtn" class="toolbar-btn redo-btn" title="Redo Drawing" disabled>
+                                <span class="btn-icon">↷</span>
+                            </button>
+                            <button id="clearDrawBtn" class="toolbar-btn clear-draw-btn" title="Clear All Drawings">
+                                <span class="btn-icon">🧹</span>
+                            </button>
+                            <div class="toolbar-toggle-option">
+                                <label class="toggle-label-small" title="Auto-delete drawings after 10 seconds">
+                                    <input type="checkbox" id="autoDeleteToggle" />
+                                    <span class="toggle-slider-small"></span>
+                                    <span class="toggle-text-small">Auto-delete</span>
+                                </label>
+                            </div>
+                            
+                            <div class="toolbar-divider"></div>
+                            
+                            <button id="clearMapBtn" class="toolbar-btn clear-btn" title="Clear All Placements">
+                                <span class="btn-icon">❌</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Map Area -->
-            <div class="map-panel">
-                <h2>Battle Map <span id="placedCount">(0/30 Placed)</span></h2>
-                <div id="selectionHint" class="selection-hint" style="display: none;">
-                    ✓ Player selected - Click on map to place
-                </div>
-                
-                <div id="mapArea" class="map-area">
-                    <canvas id="drawingCanvas" class="drawing-canvas"></canvas>
-                    <div class="map-placeholder">
-                        <p class="instruction">Click a player from the list, then click on the map to place them</p>
-                    </div>
-                </div>
-                
-                <!-- Tools Toolbar at Bottom -->
-                <div class="bottom-toolbar" id="toolsToolbar">
-                    <div class="toolbar-buttons">
-                        <button id="addObjectiveBtn" class="toolbar-btn objective-btn" title="Add Objective Marker">
-                            <span class="btn-icon">🎯</span>
-                        </button>
-                        <button id="addBossBtn" class="toolbar-btn boss-btn" title="Add Boss Marker">
-                            <img src="images/boss.png" alt="Boss" class="btn-icon-img">
-                        </button>
-                        <button id="addBlueTowerBtn" class="toolbar-btn blue-tower-btn" title="Add Ally Tower (Blue)">
-                            <img src="images/tower_blue.png" alt="Blue Tower" class="btn-icon-img">
-                        </button>
-                        <button id="addRedTowerBtn" class="toolbar-btn red-tower-btn" title="Add Enemy Tower (Red)">
-                            <img src="images/tower_red.png" alt="Red Tower" class="btn-icon-img">
-                        </button>
-                        <button id="addBlueTreeBtn" class="toolbar-btn blue-tree-btn" title="Add Ally Tree (Blue)">
-                            <img src="images/tree_blue.png" alt="Blue Tree" class="btn-icon-img">
-                        </button>
-                        <button id="addRedTreeBtn" class="toolbar-btn red-tree-btn" title="Add Enemy Tree (Red)">
-                            <img src="images/tree_red.png" alt="Red Tree" class="btn-icon-img">
-                        </button>
-                        <button id="addBlueGooseBtn" class="toolbar-btn blue-goose-btn" title="Add Ally Goose (Blue)">
-                            <img src="images/goose_blue.png" alt="Blue Goose" class="btn-icon-img">
-                        </button>
-                        <button id="addRedGooseBtn" class="toolbar-btn red-goose-btn" title="Add Enemy Goose (Red)">
-                            <img src="images/goose_red.png" alt="Red Goose" class="btn-icon-img">
-                        </button>
-                        
-                        <div class="toolbar-divider"></div>
-                        
-                        <button id="drawBtn" class="toolbar-btn draw-btn" title="Toggle Draw Mode">
-                            <span class="btn-icon">✏️</span>
-                        </button>
-                        <div class="toolbar-color-picker">
-                            <label for="drawColorPicker" class="color-picker-label" title="Choose Drawing Color">
-                                <input type="color" id="drawColorPicker" value="#ff0000">
-                            </label>
-                        </div>
-                        <button id="undoDrawBtn" class="toolbar-btn undo-btn" title="Undo Drawing" disabled>
-                            <span class="btn-icon">↶</span>
-                        </button>
-                        <button id="redoDrawBtn" class="toolbar-btn redo-btn" title="Redo Drawing" disabled>
-                            <span class="btn-icon">↷</span>
-                        </button>
-                        <button id="clearDrawBtn" class="toolbar-btn clear-draw-btn" title="Clear All Drawings">
-                            <span class="btn-icon">🧹</span>
-                        </button>
-                        <div class="toolbar-toggle-option">
-                            <label class="toggle-label-small" title="Auto-delete drawings after 10 seconds">
-                                <input type="checkbox" id="autoDeleteToggle" />
-                                <span class="toggle-slider-small"></span>
-                                <span class="toggle-text-small">Auto-delete</span>
-                            </label>
-                        </div>
-                        
-                        <div class="toolbar-divider"></div>
-                        
-                        <button id="clearMapBtn" class="toolbar-btn clear-btn" title="Clear All Placements">
-                            <span class="btn-icon">❌</span>
-                        </button>
-                    </div>
-                </div>
+        </div>
+
+        <div class="tab-content" id="tab-roster" role="tabpanel" aria-hidden="true">
+            <div class="roster-placeholder">
+                <h2>Roster</h2>
+                <p>Use this tab to build roster features later.</p>
             </div>
         </div>
     </div>

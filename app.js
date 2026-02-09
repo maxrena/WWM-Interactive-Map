@@ -168,6 +168,8 @@ const promptOkBtn = document.getElementById('promptOkBtn');
 const promptCancelBtn = document.getElementById('promptCancelBtn');
 const hotkeyHelpModal = document.getElementById('hotkeyHelpModal');
 const closeHotkeyModalBtn = document.getElementById('closeHotkeyModalBtn');
+const tabButtons = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
 
 // ============================================================================
 // CUSTOM CONFIRM DIALOG
@@ -255,11 +257,32 @@ function init() {
     loadThemePreference();
     renderMemberList();
     setupEventListeners();
+    setupTabs();
     loadSavedPositions();
     updateCounts();
     initializeCanvas();
     setupClickOutsideHandler();
     setupPlayerManagementHandlers();
+}
+
+function setupTabs() {
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const target = button.getAttribute('data-tab');
+
+            tabButtons.forEach((btn) => {
+                const isActive = btn === button;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            tabContents.forEach((panel) => {
+                const isActive = panel.id === `tab-${target}`;
+                panel.classList.toggle('active', isActive);
+                panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+            });
+        });
+    });
 }
 
 // ============================================================================

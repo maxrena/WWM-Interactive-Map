@@ -22,6 +22,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (!app.isPackaged) {
+    require('electron-reload')(__dirname, {
+      electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+      awaitWriteFinish: true,
+    });
+  }
+
   createWindow();
 
   app.on('activate', () => {
