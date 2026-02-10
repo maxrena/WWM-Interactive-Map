@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WWM - GvG Strategy</title>
+    <title>WWM - Super App v1.3.0</title>
     <link rel="stylesheet" href="styles-fixed.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111827">
@@ -11,8 +11,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Where Winds Meet - Guild War Strategy</h1>
-            <p class="subtitle">Guild vs Guild Battle Map (Max 30 Players) • <span class="copyright">Made by Will - MaiMaiYeuEm</span></p>
+            <h1>Super App</h1>
+            <p class="subtitle">Your All-in-One Companion • <span class="copyright">Made by Will - MaiMaiYeuEm</span></p>
             <div class="header-buttons">
                 <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Dark/Light Theme">
                     <span class="theme-icon">🌙</span>
@@ -34,6 +34,7 @@
         <div class="tab-bar" role="tablist" aria-label="Main tabs">
             <button class="tab-btn active" data-tab="map" role="tab" aria-selected="true">Map</button>
             <button class="tab-btn" data-tab="roster" role="tab" aria-selected="false">Roster</button>
+            <button class="tab-btn" data-tab="gacha" role="tab" aria-selected="false">Gacha 🎰</button>
         </div>
 
         <div class="tab-content active" id="tab-map" role="tabpanel">
@@ -163,6 +164,118 @@
                         <tbody id="rosterTableBody"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-gacha" role="tabpanel" aria-hidden="true">
+            <div class="gacha-panel">
+                <div class="gacha-header">
+                    <h2>🎰 Gacha Slot Counter</h2>
+                    <p class="gacha-subtitle">Track your pulls and luck!</p>
+                </div>
+
+                <div class="gacha-container">
+                    <div class="gacha-main">
+                        <!-- Slot Selection Area -->
+                        <div class="gacha-slots">
+                            <div class="slots-grid">
+                                <div class="slot-box" data-slot="Slot1">
+                                    <h3>Slot 1</h3>
+                                    <div class="slot-selection">
+                                        <button class="color-btn white-btn" data-slot="Slot1" data-color="White" title="Select White">⚪</button>
+                                        <button class="color-btn purple-btn" data-slot="Slot1" data-color="Purple" title="Select Purple">🟣</button>
+                                        <button class="color-btn gold-btn" data-slot="Slot1" data-color="Gold" title="Select Gold">🟡</button>
+                                    </div>
+                                    <div class="slot-selected-color" id="slot1-color">None</div>
+                                    <button class="slot-counter-btn" data-slot="Slot1" title="Increment counter">Count: <span class="counter-value">0</span></button>
+                                </div>
+
+                                <div class="slot-box" data-slot="Slot2">
+                                    <h3>Slot 2</h3>
+                                    <div class="slot-selection">
+                                        <button class="color-btn white-btn" data-slot="Slot2" data-color="White" title="Select White">⚪</button>
+                                        <button class="color-btn purple-btn" data-slot="Slot2" data-color="Purple" title="Select Purple">🟣</button>
+                                        <button class="color-btn gold-btn" data-slot="Slot2" data-color="Gold" title="Select Gold">🟡</button>
+                                    </div>
+                                    <div class="slot-selected-color" id="slot2-color">None</div>
+                                    <button class="slot-counter-btn" data-slot="Slot2" title="Increment counter">Count: <span class="counter-value">0</span></button>
+                                </div>
+
+                                <div class="slot-box" data-slot="Slot3">
+                                    <h3>Slot 3</h3>
+                                    <div class="slot-selection">
+                                        <button class="color-btn white-btn" data-slot="Slot3" data-color="White" title="Select White">⚪</button>
+                                        <button class="color-btn purple-btn" data-slot="Slot3" data-color="Purple" title="Select Purple">🟣</button>
+                                        <button class="color-btn gold-btn" data-slot="Slot3" data-color="Gold" title="Select Gold">🟡</button>
+                                    </div>
+                                    <div class="slot-selected-color" id="slot3-color">None</div>
+                                    <button class="slot-counter-btn" data-slot="Slot3" title="Increment counter">Count: <span class="counter-value">0</span></button>
+                                </div>
+
+                                <div class="slot-box" data-slot="Slot4">
+                                    <h3>Slot 4</h3>
+                                    <div class="slot-selection">
+                                        <button class="color-btn white-btn" data-slot="Slot4" data-color="White" title="Select White">⚪</button>
+                                        <button class="color-btn purple-btn" data-slot="Slot4" data-color="Purple" title="Select Purple">🟣</button>
+                                        <button class="color-btn gold-btn" data-slot="Slot4" data-color="Gold" title="Select Gold">🟡</button>
+                                    </div>
+                                    <div class="slot-selected-color" id="slot4-color">None</div>
+                                    <button class="slot-counter-btn" data-slot="Slot4" title="Increment counter">Count: <span class="counter-value">0</span></button>
+                                </div>
+
+                                <div class="slot-box" data-slot="Slot5">
+                                    <h3>Slot 5</h3>
+                                    <div class="slot-selection">
+                                        <button class="color-btn white-btn" data-slot="Slot5" data-color="White" title="Select White">⚪</button>
+                                        <button class="color-btn purple-btn" data-slot="Slot5" data-color="Purple" title="Select Purple">🟣</button>
+                                        <button class="color-btn gold-btn" data-slot="Slot5" data-color="Gold" title="Select Gold">🟡</button>
+                                    </div>
+                                    <div class="slot-selected-color" id="slot5-color">None</div>
+                                    <button class="slot-counter-btn" data-slot="Slot5" title="Increment counter">Count: <span class="counter-value">0</span></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Button -->
+                        <div class="gacha-confirm-section">
+                            <button id="gacha-confirm-btn" class="gacha-confirm-btn">✅ Confirm Pull</button>
+                            <button id="gacha-back-btn" class="gacha-back-btn">← Back</button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Panel -->
+                    <div class="gacha-stats">
+                        <div class="stats-box">
+                            <h3>Total Pulls</h3>
+                            <div class="stat-number" id="gacha-total-pulls">0</div>
+                        </div>
+                        <div class="stats-box">
+                            <h3>Session Pulls</h3>
+                            <div class="stat-number" id="gacha-session-pulls">0</div>
+                        </div>
+                        <div class="stats-box">
+                            <h3>Sessions</h3>
+                            <div class="stat-number" id="gacha-session-count">0</div>
+                        </div>
+                        <div class="stats-box">
+                            <h3>Avg/Session</h3>
+                            <div class="stat-number" id="gacha-avg-pulls">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Section -->
+                <div class="gacha-history-section">
+                    <h3>Pull History</h3>
+                    <div class="gacha-history-controls">
+                        <button id="gacha-export-btn" class="gacha-history-btn">📥 Export</button>
+                        <button id="gacha-import-btn" class="gacha-history-btn">📤 Import</button>
+                        <button id="gacha-clear-btn" class="gacha-history-btn gacha-danger-btn">🗑️ Clear</button>
+                    </div>
+                    <div class="gacha-history" id="gacha-history"></div>
+                </div>
+
+                <input type="file" id="gacha-import-file" accept=".json" style="display: none;">
             </div>
         </div>
     </div>
@@ -363,6 +476,7 @@
     
     <script src="data.js"></script>
     <script src="app.js"></script>
+    <script src="gacha.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

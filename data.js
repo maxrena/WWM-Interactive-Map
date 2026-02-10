@@ -1,5 +1,5 @@
 // Guild War Player Data - Maximum 30 players per guild
-// Where Winds Meet - Guild vs Guild
+// Super App - All-in-One Application
 let members = [
     { id: 1, name: "Player01", role: "Tank", team: "Team 1", weapon1: "Nameless Sword", weapon2: "Nameless Spear" },
     { id: 2, name: "Player02", role: "DPS", team: "Team 1", weapon1: "Nameless Sword", weapon2: "Nameless Spear" },

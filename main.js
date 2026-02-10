@@ -10,6 +10,7 @@ function createWindow() {
     minWidth: 1200,
     minHeight: 800,
     backgroundColor: '#0b0f14',
+    title: 'WWM - Super App v1.3.0',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
