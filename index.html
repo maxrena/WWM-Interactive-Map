@@ -147,9 +147,22 @@
         </div>
 
         <div class="tab-content" id="tab-roster" role="tabpanel" aria-hidden="true">
-            <div class="roster-placeholder">
-                <h2>Roster</h2>
-                <p>Use this tab to build roster features later.</p>
+            <div class="roster-panel">
+                <div class="roster-header">
+                    <h2>Roster</h2>
+                    <p>Paste a Google Sheet link to load roster data.</p>
+                </div>
+                <div class="roster-controls">
+                    <input type="text" id="sheetLinkInput" class="roster-input" placeholder="https://docs.google.com/spreadsheets/d/...">
+                    <button id="loadSheetBtn" class="roster-btn">Load Sheet</button>
+                </div>
+                <div id="rosterStatus" class="roster-status" aria-live="polite"></div>
+                <div class="roster-table-wrapper">
+                    <table class="roster-table">
+                        <thead id="rosterTableHead"></thead>
+                        <tbody id="rosterTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

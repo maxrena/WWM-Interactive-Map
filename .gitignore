@@ -28,3 +28,4 @@ Thumbs.db
 # Local development
 *.log
 .env.local
+config/google-sheets.json

@@ -41,6 +41,7 @@ const ENEMIES_PER_CLICK = 5;
 const GROUP_MERGE_DISTANCE = 80;
 const AUTO_DELETE_DELAY = 10000;
 const TEAM_ORDER = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6'];
+const GOOGLE_SHEETS_API_KEY = 'AIzaSyC33bJM7qg0V9LYl6bsJqTtDLELGrzOj9Q';
 // Add after TEAM_ORDER constant
 
 // Custom team name mappings
@@ -170,6 +171,11 @@ const hotkeyHelpModal = document.getElementById('hotkeyHelpModal');
 const closeHotkeyModalBtn = document.getElementById('closeHotkeyModalBtn');
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
+const sheetLinkInput = document.getElementById('sheetLinkInput');
+const loadSheetBtn = document.getElementById('loadSheetBtn');
+const rosterStatus = document.getElementById('rosterStatus');
+const rosterTableHead = document.getElementById('rosterTableHead');
+const rosterTableBody = document.getElementById('rosterTableBody');
 
 // ============================================================================
 // CUSTOM CONFIRM DIALOG
@@ -258,11 +264,99 @@ function init() {
     renderMemberList();
     setupEventListeners();
     setupTabs();
+    setupRosterHandlers();
     loadSavedPositions();
     updateCounts();
     initializeCanvas();
     setupClickOutsideHandler();
     setupPlayerManagementHandlers();
+}
+
+function setupRosterHandlers() {
+    if (!loadSheetBtn) return;
+
+    loadSheetBtn.addEventListener('click', () => {
+        const link = sheetLinkInput.value.trim();
+        loadRosterFromSheet(link);
+    });
+}
+
+function setRosterStatus(message, isError = false) {
+    rosterStatus.textContent = message;
+    rosterStatus.style.color = isError ? '#c0392b' : '#555';
+}
+
+function parseSheetId(sheetUrl) {
+    const match = sheetUrl.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+}
+
+async function loadRosterFromSheet(sheetUrl) {
+    rosterTableHead.innerHTML = '';
+    rosterTableBody.innerHTML = '';
+
+    if (!sheetUrl) {
+        setRosterStatus('Paste a Google Sheet link first.', true);
+        return;
+    }
+
+    if (!GOOGLE_SHEETS_API_KEY) {
+        setRosterStatus('Missing API key. Add it in app.js.', true);
+        return;
+    }
+
+    const sheetId = parseSheetId(sheetUrl);
+    if (!sheetId) {
+        setRosterStatus('Invalid Google Sheet link. Make sure it includes /spreadsheets/d/.', true);
+        return;
+    }
+
+    try {
+        setRosterStatus('Loading sheet data...');
+        const range = encodeURIComponent('A1:Z1000');
+        const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${GOOGLE_SHEETS_API_KEY}`;
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error(`Request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+        const rows = data.values || [];
+
+        if (rows.length === 0) {
+            setRosterStatus('No data found in the sheet.', true);
+            return;
+        }
+
+        renderRosterTable(rows);
+        setRosterStatus(`Loaded ${rows.length - 1} rows.`);
+    } catch (error) {
+        console.error(error);
+        setRosterStatus('Failed to load sheet data. Check sharing and API key.', true);
+    }
+}
+
+function renderRosterTable(rows) {
+    const [headerRow, ...bodyRows] = rows;
+
+    const headerTr = document.createElement('tr');
+    headerRow.forEach((cell) => {
+        const th = document.createElement('th');
+        th.textContent = cell;
+        headerTr.appendChild(th);
+    });
+    rosterTableHead.appendChild(headerTr);
+
+    bodyRows.forEach((row) => {
+        const tr = document.createElement('tr');
+        headerRow.forEach((_, index) => {
+            const td = document.createElement('td');
+            td.textContent = row[index] || '';
+            tr.appendChild(td);
+        });
+        rosterTableBody.appendChild(tr);
+    });
 }
 
 function setupTabs() {
