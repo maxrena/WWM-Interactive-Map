@@ -15,6 +15,9 @@ let placedBlueGeese = [];
 let placedRedGeese = [];
 let placedEnemies = [];
 
+// Selected player markers for grouping
+let selectedPlayerMarkers = new Set();
+
 // UI State
 let filteredMembers = [...members];
 let currentFilter = 'all';
@@ -46,6 +49,19 @@ const GOOGLE_SHEETS_API_KEY = 'AIzaSyC33bJM7qg0V9LYl6bsJqTtDLELGrzOj9Q';
 
 // Custom team name mappings
 let teamNameMappings = {};
+
+// Collapse state for teams
+let teamCollapseState = {};
+
+// Team colors for easy identification on map
+let teamColors = {
+    'Team 1': '#FF6B6B',
+    'Team 2': '#4ECDC4',
+    'Team 3': '#45B7D1',
+    'Team 4': '#FFA07A',
+    'Team 5': '#98D8C8',
+    'Team 6': '#F7DC6F'
+};
 
 // Load custom team names from localStorage
 function loadTeamNames() {
@@ -82,6 +98,42 @@ function loadTeamNames() {
     }
 }
 
+// Load team collapse states from localStorage
+function loadTeamCollapseStates() {
+    const saved = localStorage.getItem('vcross-gvg-team-collapse-states');
+    if (saved) {
+        try {
+            teamCollapseState = JSON.parse(saved);
+        } catch (e) {
+            console.error('Error loading team collapse states:', e);
+            teamCollapseState = {};
+        }
+    }
+}
+
+// Save team collapse states to localStorage
+function saveTeamCollapseStates() {
+    localStorage.setItem('vcross-gvg-team-collapse-states', JSON.stringify(teamCollapseState));
+}
+
+// Load team colors from localStorage
+function loadTeamColors() {
+    const saved = localStorage.getItem('vcross-gvg-team-colors');
+    if (saved) {
+        try {
+            const colors = JSON.parse(saved);
+            teamColors = { ...teamColors, ...colors };
+        } catch (e) {
+            console.error('Error loading team colors:', e);
+        }
+    }
+}
+
+// Save team colors to localStorage
+function saveTeamColors() {
+    localStorage.setItem('vcross-gvg-team-colors', JSON.stringify(teamColors));
+}
+
 // Save team names to localStorage
 function saveTeamNames() {
     localStorage.setItem('vcross-gvg-team-names', JSON.stringify(teamNameMappings));
@@ -92,25 +144,97 @@ function getTeamDisplayName(teamName) {
     return teamNameMappings[teamName] || teamName;
 }
 
-// Rename team
+// Rename team - preserve collapse state
 async function renameTeam(teamName) {
     const currentName = getTeamDisplayName(teamName);
-    const newName = await showPrompt(
-        'Rename Team',
-        `Enter new name for "${currentName}":`,
-        currentName
-    );
+    const currentColor = teamColors[teamName] || '#FF6B6B';
     
-    if (newName !== null && newName !== '') {
-        if (newName === teamName) {
-            // Reset to default
-            delete teamNameMappings[teamName];
-        } else {
-            teamNameMappings[teamName] = newName;
-        }
-        saveTeamNames();
-        renderMemberList();
-    }
+    return new Promise((resolve) => {
+        teamCustomizeName.value = currentName;
+        teamCustomizeColor.value = currentColor;
+        teamCustomizeColorValue.textContent = currentColor;
+        teamCustomizeModal.style.display = 'flex';
+        
+        // Update color display when user changes it
+        const colorChangeHandler = () => {
+            teamCustomizeColorValue.textContent = teamCustomizeColor.value;
+        };
+        teamCustomizeColor.addEventListener('change', colorChangeHandler);
+        teamCustomizeColor.addEventListener('input', colorChangeHandler);
+        
+        const handleOk = () => {
+            const newName = teamCustomizeName.value.trim();
+            const newColor = teamCustomizeColor.value;
+            
+            if (newName !== '') {
+                if (newName === teamName) {
+                    // Reset to default
+                    delete teamNameMappings[teamName];
+                } else {
+                    teamNameMappings[teamName] = newName;
+                }
+                
+                // Update team color
+                teamColors[teamName] = newColor;
+                
+                saveTeamNames();
+                saveTeamColors();
+                
+                // Preserve collapse state when re-rendering
+                const groupDivs = document.querySelectorAll('.team-group');
+                const collapseStates = {};
+                groupDivs.forEach(div => {
+                    const header = div.querySelector('.team-group-header');
+                    if (header) {
+                        const teamNameFromHeader = header.dataset.teamName;
+                        collapseStates[teamNameFromHeader] = div.classList.contains('collapsed');
+                    }
+                });
+                
+                renderMemberList();
+                
+                // Restore collapse states
+                const newGroupDivs = document.querySelectorAll('.team-group');
+                newGroupDivs.forEach(div => {
+                    const header = div.querySelector('.team-group-header');
+                    if (header) {
+                        const teamNameFromHeader = header.dataset.teamName;
+                        if (collapseStates[teamNameFromHeader]) {
+                            div.classList.add('collapsed');
+                        }
+                    }
+                });
+                
+                // Update group markers with new colors
+                const groupMarkers = document.querySelectorAll('.group-marker');
+                groupMarkers.forEach(marker => {
+                    const group = placedGroups.find(g => g.id === marker.dataset.groupId);
+                    if (group && group.teams.includes(teamName)) {
+                        updateGroupMarker(marker, group);
+                    }
+                });
+            }
+            
+            cleanup();
+            resolve();
+        };
+        
+        const handleCancel = () => {
+            cleanup();
+            resolve();
+        };
+        
+        const cleanup = () => {
+            teamCustomizeModal.style.display = 'none';
+            teamCustomizeOkBtn.removeEventListener('click', handleOk);
+            teamCustomizeCancelBtn.removeEventListener('click', handleCancel);
+            teamCustomizeColor.removeEventListener('change', colorChangeHandler);
+            teamCustomizeColor.removeEventListener('input', colorChangeHandler);
+        };
+        
+        teamCustomizeOkBtn.addEventListener('click', handleOk);
+        teamCustomizeCancelBtn.addEventListener('click', handleCancel);
+    });
 }
 
 // ============================================================================
@@ -167,6 +291,12 @@ const promptModalMessage = document.getElementById('promptModalMessage');
 const promptModalInput = document.getElementById('promptModalInput');
 const promptOkBtn = document.getElementById('promptOkBtn');
 const promptCancelBtn = document.getElementById('promptCancelBtn');
+const teamCustomizeModal = document.getElementById('teamCustomizeModal');
+const teamCustomizeName = document.getElementById('teamCustomizeName');
+const teamCustomizeColor = document.getElementById('teamCustomizeColor');
+const teamCustomizeColorValue = document.getElementById('teamCustomizeColorValue');
+const teamCustomizeOkBtn = document.getElementById('teamCustomizeOkBtn');
+const teamCustomizeCancelBtn = document.getElementById('teamCustomizeCancelBtn');
 const hotkeyHelpModal = document.getElementById('hotkeyHelpModal');
 const closeHotkeyModalBtn = document.getElementById('closeHotkeyModalBtn');
 const tabButtons = document.querySelectorAll('.tab-btn');
@@ -260,6 +390,8 @@ function showPrompt(title, message, defaultValue = '') {
 function init() {
     loadPlayersFromStorage();
     loadTeamNames();
+    loadTeamCollapseStates();
+    loadTeamColors();
     loadThemePreference();
     renderMemberList();
     setupEventListeners();
@@ -424,6 +556,11 @@ function renderGroupedView() {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'team-group';
             
+            // Apply saved collapse state
+            if (teamCollapseState[teamName]) {
+                groupDiv.classList.add('collapsed');
+            }
+            
             const headerDiv = document.createElement('div');
             headerDiv.className = 'team-group-header';
             headerDiv.draggable = true;
@@ -491,6 +628,14 @@ function renderListView() {
 // Toggle team group collapse
 function toggleTeamGroup(groupDiv) {
     groupDiv.classList.toggle('collapsed');
+    
+    // Save collapse state
+    const header = groupDiv.querySelector('.team-group-header');
+    if (header) {
+        const teamName = header.dataset.teamName;
+        teamCollapseState[teamName] = groupDiv.classList.contains('collapsed');
+        saveTeamCollapseStates();
+    }
 }
 
 // Create member element
@@ -768,7 +913,12 @@ function handleDragEnd(e) {
 // Map drag over
 function handleDragOver(e) {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+    const type = e.dataTransfer.types.includes('type') ? 
+                 Array.from(e.dataTransfer.types).find(t => t.startsWith('type')) : 
+                 e.dataTransfer.getData('type');
+    
+    // Use 'move' effect for player markers, 'copy' for others
+    e.dataTransfer.dropEffect = (type === 'player-markers') ? 'move' : 'copy';
     mapArea.classList.add('drag-over');
 }
 
@@ -816,6 +966,35 @@ function handleDrop(e) {
         placeBlueGooseMarker(x, y);
     } else if (type === 'red-goose') {
         placeRedGooseMarker(x, y);
+    } else if (type === 'player-markers') {
+        // Moving multiple selected player markers
+        const memberIds = data.split(',').map(id => parseInt(id.trim()));
+        
+        // Calculate offset from first marker's current position to new position
+        if (memberIds.length > 0) {
+            const firstPlacement = placedMembers.find(p => p.memberId === memberIds[0]);
+            if (firstPlacement) {
+                const offsetX = x - firstPlacement.x;
+                const offsetY = y - firstPlacement.y;
+                
+                // Move all selected markers by the offset
+                memberIds.forEach(memberId => {
+                    const placement = placedMembers.find(p => p.memberId === memberId);
+                    if (placement) {
+                        placement.x += offsetX;
+                        placement.y += offsetY;
+                        
+                        const marker = mapArea.querySelector(`[data-member-id="${memberId}"]`);
+                        if (marker) {
+                            marker.style.left = `${placement.x - 8}px`;
+                            marker.style.top = `${placement.y - 8}px`;
+                        }
+                    }
+                });
+                
+                savePositions();
+            }
+        }
     } else if (type === 'member') {
         // Dropping individual member
         const memberId = parseInt(data);
@@ -990,6 +1169,9 @@ function mergeGroups(existingGroup, newTeamName, newMembers) {
     // Update the marker
     const marker = mapArea.querySelector(`[data-group-id="${existingGroup.id}"]`);
     if (marker) {
+        // Update marker color to first team's color
+        const teamColor = (existingGroup.teams.length > 0) ? teamColors[existingGroup.teams[0]] : '#667eea';
+        marker.style.background = `linear-gradient(135deg, ${teamColor} 0%, ${adjustColorBrightness(teamColor, -20)} 100%)`;
         updateGroupMarker(marker, existingGroup);
     }
     
@@ -1006,6 +1188,10 @@ function renderGroupMarker(group) {
     marker.style.top = `${group.y - 16}px`;
     marker.draggable = true;
     
+    // Get the first team's color
+    const teamColor = (group.teams.length > 0) ? teamColors[group.teams[0]] : '#667eea';
+    marker.style.background = `linear-gradient(135deg, ${teamColor} 0%, ${adjustColorBrightness(teamColor, -20)} 100%)`;
+    
     updateGroupMarker(marker, group);
     
     // Make marker draggable
@@ -1013,6 +1199,16 @@ function renderGroupMarker(group) {
     marker.addEventListener('dragend', handleGroupMarkerDragEnd);
     
     mapArea.appendChild(marker);
+}
+
+// Helper function to adjust color brightness
+function adjustColorBrightness(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+    const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amt));
+    const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+    return '#' + (0x1000000 + (R << 16) + (G << 8) + B).toString(16).slice(1);
 }
 
 // Update group marker content
@@ -1141,6 +1337,17 @@ function removeGroupMarker(groupId) {
     if (marker) {
         marker.remove();
     }
+    
+    // Find the group and clear any selected member markers in it
+    const group = placedGroups.find(g => g.id === groupId);
+    if (group) {
+        group.memberIds.forEach(memberId => {
+            if (selectedPlayerMarkers.has(memberId)) {
+                selectedPlayerMarkers.delete(memberId);
+            }
+        });
+    }
+    
     placedGroups = placedGroups.filter(g => g.id !== groupId);
     savePositions();
     updateCounts();
@@ -1331,6 +1538,15 @@ function toggleRedTreeMode() {
 
 // Handle map click for placing objectives/bosses
 function handleMapClick(e) {
+    // Clear player marker selection when clicking empty space on map
+    if (e.target === mapArea || e.target === drawingCanvas) {
+        selectedPlayerMarkers.forEach(id => {
+            const marker = mapArea.querySelector(`[data-member-id="${id}"]`);
+            if (marker) marker.classList.remove('selected');
+        });
+        selectedPlayerMarkers.clear();
+    }
+    
     if (!placingMode) return;
     
     const rect = mapArea.getBoundingClientRect();
@@ -2625,6 +2841,30 @@ function placeMemberOnMap(member, x, y) {
     marker.addEventListener('dragstart', handleMarkerDragStart);
     marker.addEventListener('dragend', handleMarkerDragEnd);
     
+    // Add click handler for selection (Shift+Click to select multiple)
+    marker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const memberId = parseInt(marker.dataset.memberId);
+        
+        if (e.shiftKey) {
+            // Toggle selection with Shift+Click
+            if (selectedPlayerMarkers.has(memberId)) {
+                selectedPlayerMarkers.delete(memberId);
+                marker.classList.remove('selected');
+            } else {
+                selectedPlayerMarkers.add(memberId);
+                marker.classList.add('selected');
+            }
+        } else {
+            // Single click clears other selections
+            selectedPlayerMarkers.forEach(id => {
+                const otherMarker = mapArea.querySelector(`[data-member-id="${id}"]`);
+                if (otherMarker) otherMarker.classList.remove('selected');
+            });
+            selectedPlayerMarkers.clear();
+        }
+    });
+    
     mapArea.appendChild(marker);
     
     placedMembers.push({
@@ -2645,27 +2885,28 @@ function placeMemberOnMap(member, x, y) {
 // Handle marker drag
 function handleMarkerDragStart(e) {
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', e.currentTarget.dataset.memberId);
+    const memberId = parseInt(e.currentTarget.dataset.memberId);
+    
+    // If dragging a non-selected marker, clear selection and select only this one
+    if (!selectedPlayerMarkers.has(memberId)) {
+        selectedPlayerMarkers.forEach(id => {
+            const marker = mapArea.querySelector(`[data-member-id="${id}"]`);
+            if (marker) marker.classList.remove('selected');
+        });
+        selectedPlayerMarkers.clear();
+        selectedPlayerMarkers.add(memberId);
+        e.currentTarget.classList.add('selected');
+    }
+    
+    e.dataTransfer.setData('text/plain', Array.from(selectedPlayerMarkers).join(','));
+    e.dataTransfer.setData('type', 'player-markers');
     e.currentTarget.style.opacity = '0.5';
 }
 
 function handleMarkerDragEnd(e) {
     e.currentTarget.style.opacity = '1';
     
-    const memberId = parseInt(e.currentTarget.dataset.memberId);
-    const rect = mapArea.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Update position
-    const placement = placedMembers.find(p => p.memberId === memberId);
-    if (placement) {
-        placement.x = x;
-        placement.y = y;
-        e.currentTarget.style.left = `${x - 8}px`; // Center the 16px marker
-        e.currentTarget.style.top = `${y - 8}px`;
-        savePositions();
-    }
+    // Players are moved by map drop handler, selection is preserved
 }
 
 // Remove member marker
@@ -2674,6 +2915,12 @@ function removeMemberMarker(memberId) {
     if (marker) {
         marker.remove();
     }
+    
+    // Remove from selection if selected
+    if (selectedPlayerMarkers.has(memberId)) {
+        selectedPlayerMarkers.delete(memberId);
+    }
+    
     placedMembers = placedMembers.filter(p => p.memberId !== memberId);
     savePositions();
     updateCounts();
@@ -2746,6 +2993,10 @@ async function clearAllPlacements() {
         placedBlueGeese = [];
         placedRedGeese = [];
         placedEnemies = [];
+        
+        // Clear player marker selections
+        selectedPlayerMarkers.clear();
+        
         savePositions();
         updateCounts();
         updatePlaceholder();

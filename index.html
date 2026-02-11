@@ -407,6 +407,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Team Customization Modal -->
+    <div id="teamCustomizeModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Customize Team</h2>
+            </div>
+            <div class="modal-body">
+                <p>Team Name:</p>
+                <input type="text" id="teamCustomizeName" class="prompt-input" placeholder="Enter team name...">
+                <p style="margin-top: 12px;">Team Color:</p>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="color" id="teamCustomizeColor" style="width: 50px; height: 40px; cursor: pointer;">
+                    <span id="teamCustomizeColorValue" style="font-size: 12px;">#FF6B6B</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="teamCustomizeCancelBtn">Cancel</button>
+                <button class="btn-primary" id="teamCustomizeOkBtn">Save</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Hotkey Help Modal -->
     <div id="hotkeyHelpModal" class="modal">
