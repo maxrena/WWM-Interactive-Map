@@ -1,6 +1,6 @@
 [package]
 name = "wwm-gvg-strategy"
-version = "1.0.0"
+version = "1.4.0"
 description = "WWM GvG Strategy Desktop App"
 authors = ["Will - MaiMaiYeuEm"]
 edition = "2021"
