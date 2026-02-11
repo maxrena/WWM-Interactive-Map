@@ -1,14 +1,11 @@
 {
   "name": "wwm-gvg-strategy",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "main": "main.js",
   "scripts": {
-    "dev": "tauri dev",
-    "build": "tauri build",
-    "tauri": "tauri",
-    "electron": "electron .",
-    "electron:dist": "electron-builder"
+    "dev": "electron .",
+    "build": "electron-builder"
   },
   "build": {
     "appId": "com.wwm.gvg.strategy",
@@ -29,7 +26,6 @@
     }
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.5.11",
     "electron": "^32.2.0",
     "electron-builder": "^24.13.3",
     "electron-reload": "^1.5.0"
