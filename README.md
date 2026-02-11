@@ -24,7 +24,7 @@ npm install
 ## Run (Development)
 
 ```bash
-npm run electron
+npm run dev
 ```
 
 This runs the Electron app with hot reload enabled for local changes.
@@ -32,15 +32,15 @@ This runs the Electron app with hot reload enabled for local changes.
 ## Build (Windows Installer)
 
 ```bash
-npm run electron:dist
+npm run build
 ```
 
 The installer will be created in the `dist/` folder.
 
 ## Project Scripts
 
-- `npm run electron` - Run the Electron app in development.
-- `npm run electron:dist` - Build the Windows installer.
+- `npm run dev` - Run the Electron app in development.
+- `npm run build` - Build the Windows installer.
 
 ## Notes
 

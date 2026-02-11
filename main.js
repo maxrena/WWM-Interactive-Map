@@ -1,16 +1,19 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
 let mainWindow;
 
 function createWindow() {
+  const appVersion = app.getVersion();
+  const windowTitle = `WWM - Super App v${appVersion}`;
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1200,
     minHeight: 800,
     backgroundColor: '#0b0f14',
-    title: 'WWM - Super App v1.4.0',
+    title: windowTitle,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -23,6 +26,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle('app-version', () => app.getVersion());
+
   if (!app.isPackaged) {
     require('electron-reload')(__dirname, {
       electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
