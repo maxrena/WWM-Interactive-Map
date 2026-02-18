@@ -30,6 +30,9 @@ let placedEnemies = [];
 // Selected player markers for grouping
 let selectedPlayerMarkers = new Set();
 
+// Active pointer drag state for team group markers
+let activeGroupPointerDrag = null;
+
 // UI State
 let filteredMembers = [...members];
 let currentFilter = 'all';
@@ -1198,7 +1201,7 @@ function renderGroupMarker(group) {
     marker.dataset.groupId = group.id;
     marker.style.left = `${group.x - 16}px`; // Center the 32px marker
     marker.style.top = `${group.y - 16}px`;
-    marker.draggable = true;
+    marker.draggable = false;
     
     // Get the first team's color
     const teamColor = (group.teams.length > 0) ? teamColors[group.teams[0]] : '#667eea';
@@ -1206,9 +1209,9 @@ function renderGroupMarker(group) {
     
     updateGroupMarker(marker, group);
     
-    // Make marker draggable
-    marker.addEventListener('dragstart', handleGroupMarkerDragStart);
-    marker.addEventListener('dragend', handleGroupMarkerDragEnd);
+    // Make marker draggable via pointer events
+    marker.addEventListener('pointerdown', handleGroupMarkerPointerDown);
+    marker.addEventListener('click', handleGroupMarkerClickCapture, true);
     
     mapArea.appendChild(marker);
 }
@@ -1288,26 +1291,94 @@ function handleGroupMarkerDragStart(e) {
 
 function handleGroupMarkerDragEnd(e) {
     e.currentTarget.style.opacity = '1';
-    
-    const groupId = e.currentTarget.dataset.groupId;
-    const rect = mapArea.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Update position
+}
+
+function handleGroupMarkerPointerDown(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('.remove-btn, .split-btn, .split-remove-btn, .split-member-item')) return;
+
+    const marker = e.currentTarget;
+    const groupId = marker.dataset.groupId;
     const group = placedGroups.find(g => g.id === groupId);
-    if (group) {
-        group.x = x;
-        group.y = y;
-        e.currentTarget.style.left = `${x - 16}px`; // Center the 32px marker
-        e.currentTarget.style.top = `${y - 16}px`;
-        
-        // Check for merging with other groups
+    if (!group) return;
+
+    const rect = mapArea.getBoundingClientRect();
+    activeGroupPointerDrag = {
+        marker,
+        group,
+        offsetX: e.clientX - (rect.left + group.x),
+        offsetY: e.clientY - (rect.top + group.y),
+        moved: false,
+        pointerId: e.pointerId
+    };
+
+    marker.setPointerCapture(e.pointerId);
+    marker.style.opacity = '0.5';
+    marker.style.touchAction = 'none';
+    e.preventDefault();
+}
+
+function handleGroupMarkerPointerMove(e) {
+    if (!activeGroupPointerDrag || e.pointerId !== activeGroupPointerDrag.pointerId) return;
+
+    const { marker, group, offsetX, offsetY } = activeGroupPointerDrag;
+    const rect = mapArea.getBoundingClientRect();
+
+    let x = e.clientX - rect.left - offsetX;
+    let y = e.clientY - rect.top - offsetY;
+
+    x = Math.max(16, Math.min(rect.width - 16, x));
+    y = Math.max(16, Math.min(rect.height - 16, y));
+
+    if (Math.abs(group.x - x) > 2 || Math.abs(group.y - y) > 2) {
+        activeGroupPointerDrag.moved = true;
+    }
+
+    group.x = x;
+    group.y = y;
+    marker.style.left = `${x - 16}px`;
+    marker.style.top = `${y - 16}px`;
+}
+
+function handleGroupMarkerPointerUp(e) {
+    if (!activeGroupPointerDrag || e.pointerId !== activeGroupPointerDrag.pointerId) return;
+
+    const { marker, group, moved } = activeGroupPointerDrag;
+    marker.style.opacity = '1';
+    marker.style.touchAction = '';
+
+    if (moved) {
         checkAndMergeNearbyGroups(group);
-        
         savePositions();
+        marker.dataset.skipClick = '1';
+        setTimeout(() => {
+            if (marker.dataset.skipClick === '1') {
+                marker.dataset.skipClick = '0';
+            }
+        }, 120);
+    }
+
+    try {
+        marker.releasePointerCapture(e.pointerId);
+    } catch (err) {
+        // no-op
+    }
+
+    activeGroupPointerDrag = null;
+}
+
+function handleGroupMarkerClickCapture(e) {
+    const marker = e.currentTarget;
+    if (marker.dataset.skipClick === '1') {
+        marker.dataset.skipClick = '0';
+        e.preventDefault();
+        e.stopPropagation();
     }
 }
+
+mapArea.addEventListener('pointermove', handleGroupMarkerPointerMove);
+mapArea.addEventListener('pointerup', handleGroupMarkerPointerUp);
+mapArea.addEventListener('pointercancel', handleGroupMarkerPointerUp);
 
 // Check and merge nearby groups after moving
 function checkAndMergeNearbyGroups(movedGroup) {
