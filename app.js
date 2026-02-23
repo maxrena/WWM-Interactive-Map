@@ -2,17 +2,7 @@
 // APPLICATION STATE & CONFIGURATION
 // ============================================================================
 
-if (window.appInfo && typeof window.appInfo.version === 'function') {
-    window.appInfo.version()
-        .then((version) => {
-            if (version) {
-                document.title = `WWM - Super App v${version}`;
-            }
-        })
-        .catch(() => {
-            // Fallback: leave the default title if version lookup fails.
-        });
-}
+document.title = 'WWM - Super App v1.5.0';
 
 // Placed items on map
 let placedMembers = [];
