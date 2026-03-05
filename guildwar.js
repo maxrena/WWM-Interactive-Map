@@ -81,6 +81,7 @@
             saveOauthConfigBtn: document.getElementById('gwSaveOauthConfigBtn'),
             importMapPlayersBtn: document.getElementById('gwImportMapPlayersBtn'),
             syncRegistrationsBtn: document.getElementById('gwSyncRegistrationsBtn'),
+            copyMemberAppUrlBtn: document.getElementById('gwCopyMemberAppUrlBtn'),
             teamSize: document.getElementById('gwTeamSize'),
             tankPerTeam: document.getElementById('gwTankPerTeam'),
             healerPerTeam: document.getElementById('gwHealerPerTeam'),
@@ -118,6 +119,7 @@
         elements.saveOauthConfigBtn?.addEventListener('click', saveOauthConfig);
         elements.importMapPlayersBtn?.addEventListener('click', importFromMapPlayers);
         elements.syncRegistrationsBtn?.addEventListener('click', syncRegistrationsFromApi);
+        elements.copyMemberAppUrlBtn?.addEventListener('click', copyMemberAppUrl);
         elements.generateTeamsBtn?.addEventListener('click', generateTeams);
         elements.clearGeneratedBtn?.addEventListener('click', clearGenerated);
         elements.postDiscordBtn?.addEventListener('click', postTeamsToDiscord);
@@ -567,6 +569,23 @@
             setAdminStatus(`Hosted sync completed. Added ${addedCount} new registration(s).`, STATUS_CLASS.success);
         } catch (error) {
             setAdminStatus(`Hosted sync failed: ${error.message}`, STATUS_CLASS.error);
+        }
+    }
+
+    async function copyMemberAppUrl() {
+        const deploymentConfig = readDeploymentConfig();
+        const memberUrl = deploymentConfig.memberAppUrl || elements.memberAppUrl?.value.trim() || '';
+
+        if (!memberUrl) {
+            setAdminStatus('Set memberAppUrl in guildwar.config.js before copying.', STATUS_CLASS.error);
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(memberUrl);
+            setAdminStatus('Member page URL copied to clipboard.', STATUS_CLASS.success);
+        } catch (error) {
+            setAdminStatus('Clipboard copy failed in this environment.', STATUS_CLASS.error);
         }
     }
 
