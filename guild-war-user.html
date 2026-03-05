@@ -9,6 +9,9 @@
 <body>
     <div class="container">
         <header>
+            <div class="gw-header-actions">
+                <button type="button" class="btn-secondary gw-theme-toggle" id="gwThemeToggleBtn" aria-pressed="false">Dark Mode</button>
+            </div>
             <h1>Guild War Registration</h1>
             <p class="subtitle">Members: login with Discord and submit your registration</p>
         </header>
@@ -48,6 +51,10 @@
                             <option value="Tank">Tank</option>
                             <option value="Healer">Healer</option>
                             <option value="DPS">DPS</option>
+                            <option value="Cửu Kiếm">Cửu Kiếm</option>
+                            <option value="Vô Danh">Vô Danh</option>
+                            <option value="Dù Quạt DPS">Dù Quạt DPS</option>
+                            <option value="Song Đao">Song Đao</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -56,18 +63,21 @@
                     </div>
 
                     <div class="form-group form-group-full">
-                        <label>Available Time Slots</label>
-                        <div class="gw-checkbox-row" id="gwTimeSlots">
-                            <label><input type="checkbox" value="18:00"> 18:00</label>
-                            <label><input type="checkbox" value="20:00"> 20:00</label>
-                            <label><input type="checkbox" value="22:00"> 22:00</label>
-                            <label><input type="checkbox" value="00:00"> 00:00</label>
+                        <label>Participation</label>
+                        <div class="gw-option-grid">
+                            <label><input type="checkbox" id="gwIsBackup"> Backup</label>
+                            <label><input type="checkbox" id="gwCanSub"> Can sub last minute</label>
                         </div>
                     </div>
 
-                    <div class="form-group form-group-inline">
-                        <label><input type="checkbox" id="gwIsBackup"> Backup</label>
-                        <label><input type="checkbox" id="gwCanSub"> Can sub last minute</label>
+                    <div class="form-group form-group-full">
+                        <label>Weekend Availability</label>
+                        <div class="gw-option-grid" id="gwAvailabilityOptions">
+                            <label><input type="radio" name="gwAvailability" value="saturday"> Can attend Saturday</label>
+                            <label><input type="radio" name="gwAvailability" value="sunday"> Can attend Sunday</label>
+                            <label><input type="radio" name="gwAvailability" value="both" checked> Can attend both</label>
+                            <label><input type="radio" name="gwAvailability" value="none"> Can attend none</label>
+                        </div>
                     </div>
 
                     <div class="form-actions form-group-full">

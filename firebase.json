@@ -1,0 +1,33 @@
+{
+  "hosting": {
+    "site": "guildwar-registration",
+    "public": ".",
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "/guild-war-user",
+        "type": 302
+      }
+    ],
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "index.html",
+      "**/.*",
+      "**/node_modules/**",
+      "dist/**",
+      "dist-new/**",
+      ".venv/**",
+      ".electron-user-data/**",
+      ".electron-user-data-dev/**",
+      "firebase-debug.log"
+    ],
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "/",
+        "destination": "/guild-war-user.html"
+      }
+    ]
+  }
+}

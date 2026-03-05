@@ -32,3 +32,4 @@ Thumbs.db
 config/google-sheets.json
 .electron-user-data/
 .electron-user-data-dev/
+.firebase/

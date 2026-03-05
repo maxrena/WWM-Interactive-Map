@@ -58,7 +58,8 @@ window.GUILD_WAR_CONFIG = {
 	discordClientId: 'YOUR_DISCORD_CLIENT_ID',
 	discordRedirectUri: 'https://your-app-name.onrender.com/',
 	appBaseUrl: 'https://your-app-name.onrender.com/',
-	memberAppUrl: 'https://your-app-name.onrender.com/guild-war-user.html',
+	memberAppUrl: 'https://your-app-name.onrender.com/guild-war-user',
+	adminAppUrl: 'https://your-app-name.onrender.com/guild-war-admin',
 	registrationApiUrl: 'https://your-api-endpoint.example.com/registrations',
 	deployment: 'cloud'
 };
@@ -88,15 +89,15 @@ You can copy values from `guildwar.config.example.js`.
 
 ### 3) Hosted member page
 
-- Host `guild-war-user.html` on your site and share that URL with members.
+- Host `guild-war-user` on your site and share that URL with members.
 - In the desktop app, the **Guild War User** tab reads `memberAppUrl` and opens that hosted page.
-- Keep **Guild War Admin** in the desktop app for team generation and management.
+- Host `guild-war-admin` on your site and use that URL for officer workflows.
 
 ### 4) Registration sync API (for user page -> admin app)
 
 To sync registrations from the hosted user page into the app, set `registrationApiUrl` to an endpoint that supports:
 
-- `POST { registration: {...} }` to receive a new registration from `guild-war-user.html`
+- `POST { registration: {...} }` to receive a new registration from `guild-war-user`
 - `GET` returning either:
 	- `[{...}, {...}]`, or
 	- `{ "registrations": [{...}, {...}] }`
@@ -105,8 +106,8 @@ Required registration fields:
 
 - `discordName`
 - `characterName`
-- `role` (`Tank`/`Healer`/`DPS`)
-- optional: `discordUserId`, `discordDisplayName`, `powerLevel`, `timeSlots`, `isBackup`, `canSub`, `createdAt`
+- `role` (`Tank`/`Healer`/`DPS`/`Cửu Kiếm`/`Vô Danh`/`Dù Quạt DPS`/`Song Đao`)
+- optional: `discordUserId`, `discordDisplayName`, `powerLevel`, `isBackup`, `canSub`, `attendancePreference`, `canAttendSaturday`, `canAttendSunday`, `createdAt`
 
 ### 5) Data behavior on hosted site
 
@@ -122,10 +123,10 @@ Required registration fields:
 ### 7) First run checklist (cloud)
 
 1. Open your Render URL.
-2. Open `guild-war-user.html`.
+2. Open `guild-war-user`.
 3. Click **Login with Discord**.
 4. Submit a member registration.
-5. Open desktop app -> **Guild War Admin**.
+5. Open `guild-war-admin` (or desktop app -> **Guild War Admin**).
 6. Click **Sync Hosted Registrations**.
 7. Generate teams and manage attendance.
 

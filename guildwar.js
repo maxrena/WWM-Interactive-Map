@@ -3,6 +3,8 @@
     const OAUTH_STATE_KEY = 'wwm-gw-oauth-state';
     const OAUTH_TOKEN_KEY = 'wwm-gw-oauth-token';
     const OAUTH_USER_KEY = 'wwm-gw-oauth-user';
+    const THEME_STORAGE_KEY = 'vcross-gvg-theme';
+    const SHARE_PBKDF2_ROUNDS = 120000;
 
     const STATUS_CLASS = {
         success: 'success',
@@ -29,6 +31,7 @@
     let state = { ...defaultState };
     let elements = {};
     let currentDiscordUser = null;
+    const DPS_VARIANT_ROLES = new Set(['DPS', 'Cửu Kiếm', 'Vô Danh', 'Dù Quạt DPS', 'Song Đao']);
 
     function readDeploymentConfig() {
         const cfg = (typeof window !== 'undefined' && window.GUILD_WAR_CONFIG && typeof window.GUILD_WAR_CONFIG === 'object')
@@ -38,12 +41,14 @@
         const appBaseUrl = typeof cfg.appBaseUrl === 'string' ? cfg.appBaseUrl.trim() : '';
         const normalizedBase = appBaseUrl ? appBaseUrl.replace(/\/+$/, '') : '';
         const memberAppUrl = typeof cfg.memberAppUrl === 'string' ? cfg.memberAppUrl.trim() : '';
+        const adminAppUrl = typeof cfg.adminAppUrl === 'string' ? cfg.adminAppUrl.trim() : '';
 
         return {
             clientId: typeof cfg.discordClientId === 'string' ? cfg.discordClientId.trim() : '',
             redirectUri: typeof cfg.discordRedirectUri === 'string' ? cfg.discordRedirectUri.trim() : '',
             appBaseUrl,
             memberAppUrl: memberAppUrl || (normalizedBase ? `${normalizedBase}/guild-war-user.html` : ''),
+            adminAppUrl: adminAppUrl || (normalizedBase ? `${normalizedBase}/guild-war-admin.html` : ''),
             registrationApiUrl: typeof cfg.registrationApiUrl === 'string' ? cfg.registrationApiUrl.trim() : ''
         };
     }
@@ -66,9 +71,10 @@
             characterName: document.getElementById('gwCharacterName'),
             role: document.getElementById('gwRole'),
             powerLevel: document.getElementById('gwPowerLevel'),
-            timeSlots: document.getElementById('gwTimeSlots'),
             isBackup: document.getElementById('gwIsBackup'),
             canSub: document.getElementById('gwCanSub'),
+            availabilityOptions: document.getElementById('gwAvailabilityOptions'),
+            themeToggleBtn: document.getElementById('gwThemeToggleBtn'),
             submitRegistrationBtn: document.getElementById('gwSubmitRegistrationBtn'),
             memberStatus: document.getElementById('gwMemberStatus'),
             discordLoginBtn: document.getElementById('gwDiscordLoginBtn'),
@@ -76,6 +82,8 @@
             authIdentity: document.getElementById('gwAuthIdentity'),
             memberAppUrl: document.getElementById('gwMemberAppUrl'),
             openMemberAppLink: document.getElementById('gwOpenMemberAppLink'),
+            adminAppUrl: document.getElementById('gwAdminAppUrl'),
+            openAdminAppLink: document.getElementById('gwOpenAdminAppLink'),
             oauthClientId: document.getElementById('gwDiscordClientId'),
             oauthRedirectUri: document.getElementById('gwDiscordRedirectUri'),
             saveOauthConfigBtn: document.getElementById('gwSaveOauthConfigBtn'),
@@ -91,6 +99,11 @@
             webhookUrl: document.getElementById('gwWebhookUrl'),
             postDiscordBtn: document.getElementById('gwPostDiscordBtn'),
             copyDiscordBtn: document.getElementById('gwCopyDiscordBtn'),
+            shareAuthKey: document.getElementById('gwShareAuthKey'),
+            sharePackageInput: document.getElementById('gwSharePackageInput'),
+            generateSharePackageBtn: document.getElementById('gwGenerateSharePackageBtn'),
+            copySharePackageBtn: document.getElementById('gwCopySharePackageBtn'),
+            importSharePackageBtn: document.getElementById('gwImportSharePackageBtn'),
             actionStatus: document.getElementById('gwActionStatus'),
             clearRegistrationsBtn: document.getElementById('gwClearRegistrationsBtn'),
             registrantBody: document.getElementById('gwRegistrantBody'),
@@ -102,6 +115,7 @@
             reliabilityBody: document.getElementById('gwReliabilityBody')
         };
 
+        initializeTheme();
         loadState();
         initializeDefaults();
         bindEvents();
@@ -109,11 +123,14 @@
         await processDiscordOAuthRedirect();
         restoreDiscordSession();
         updateAuthUi();
+        setMemberStatus('', null);
+        setAdminStatus('', null);
         renderAll();
     }
 
     function bindEvents() {
         elements.form?.addEventListener('submit', handleRegistrationSubmit);
+        elements.themeToggleBtn?.addEventListener('click', toggleTheme);
         elements.discordLoginBtn?.addEventListener('click', startDiscordLogin);
         elements.discordLogoutBtn?.addEventListener('click', logoutDiscord);
         elements.saveOauthConfigBtn?.addEventListener('click', saveOauthConfig);
@@ -124,11 +141,40 @@
         elements.clearGeneratedBtn?.addEventListener('click', clearGenerated);
         elements.postDiscordBtn?.addEventListener('click', postTeamsToDiscord);
         elements.copyDiscordBtn?.addEventListener('click', copyDiscordMessage);
+        elements.generateSharePackageBtn?.addEventListener('click', generateSharePackage);
+        elements.copySharePackageBtn?.addEventListener('click', copySharePackage);
+        elements.importSharePackageBtn?.addEventListener('click', importSharePackage);
         elements.clearRegistrationsBtn?.addEventListener('click', clearRegistrations);
         elements.registrantBody?.addEventListener('click', handleRegistrantTableClick);
         elements.saveAttendanceBtn?.addEventListener('click', saveAttendanceSnapshot);
         elements.eventDate?.addEventListener('change', renderAttendanceTable);
         elements.webhookUrl?.addEventListener('change', persistWebhookUrl);
+    }
+
+    function initializeTheme() {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        if (savedTheme === 'dark' || savedTheme === 'light') {
+            applyTheme(savedTheme === 'dark');
+            return;
+        }
+
+        const prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        applyTheme(prefersDark);
+    }
+
+    function toggleTheme() {
+        const nextIsDark = !document.body.classList.contains('dark-theme');
+        applyTheme(nextIsDark);
+        localStorage.setItem(THEME_STORAGE_KEY, nextIsDark ? 'dark' : 'light');
+    }
+
+    function applyTheme(isDark) {
+        document.body.classList.toggle('dark-theme', isDark);
+
+        if (elements.themeToggleBtn) {
+            elements.themeToggleBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            elements.themeToggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+        }
     }
 
     function initializeDefaults() {
@@ -161,6 +207,20 @@
             } else {
                 elements.openMemberAppLink.href = '#';
                 elements.openMemberAppLink.setAttribute('aria-disabled', 'true');
+            }
+        }
+
+        if (elements.adminAppUrl) {
+            elements.adminAppUrl.value = deploymentConfig.adminAppUrl || '';
+        }
+
+        if (elements.openAdminAppLink) {
+            if (deploymentConfig.adminAppUrl) {
+                elements.openAdminAppLink.href = deploymentConfig.adminAppUrl;
+                elements.openAdminAppLink.setAttribute('aria-disabled', 'false');
+            } else {
+                elements.openAdminAppLink.href = '#';
+                elements.openAdminAppLink.setAttribute('aria-disabled', 'true');
             }
         }
 
@@ -224,6 +284,14 @@
         history.replaceState({}, document.title, window.location.pathname + window.location.search);
 
         if (oauthError) {
+            sessionStorage.removeItem(OAUTH_STATE_KEY);
+            if (oauthError === 'access_denied') {
+                clearDiscordSession();
+                updateAuthUi();
+                setMemberStatus('', null);
+                return;
+            }
+
             setMemberStatus(`Discord login failed: ${oauthError}`, STATUS_CLASS.error);
             return;
         }
@@ -351,6 +419,11 @@
             elements.powerLevel.value = 0;
         }
 
+        const defaultAvailability = elements.availabilityOptions?.querySelector('input[name="gwAvailability"][value="both"]');
+        if (defaultAvailability) {
+            defaultAvailability.checked = true;
+        }
+
         if (includeDiscord && elements.discordName) {
             elements.discordName.value = currentDiscordUser ? currentDiscordUser.fullHandle : '';
         }
@@ -427,10 +500,11 @@
 
     function readRegistrationForm() {
         const characterName = elements.characterName?.value.trim() || '';
-        const role = elements.role?.value || '';
+        const role = normalizeRole(elements.role?.value || '');
         const powerLevel = Number.parseInt(elements.powerLevel?.value || '0', 10);
-        const timeSlots = Array.from(elements.timeSlots?.querySelectorAll('input[type="checkbox"]:checked') || []).map((box) => box.value);
-
+        const selectedAvailability = elements.availabilityOptions?.querySelector('input[name="gwAvailability"]:checked')?.value || 'both';
+        const attendancePreference = normalizeAvailabilityPreference(selectedAvailability);
+        const attendance = availabilityBooleansFromPreference(attendancePreference);
         if (!characterName || !role || Number.isNaN(powerLevel) || powerLevel < 0) {
             setMemberStatus('Please fill all required registration fields.', STATUS_CLASS.error);
             return null;
@@ -444,9 +518,11 @@
             characterName,
             role,
             powerLevel,
-            timeSlots,
             isBackup: !!elements.isBackup?.checked,
             canSub: !!elements.canSub?.checked,
+            attendancePreference,
+            canAttendSaturday: attendance.canAttendSaturday,
+            canAttendSunday: attendance.canAttendSunday,
             createdAt: new Date().toISOString()
         };
     }
@@ -473,7 +549,6 @@
             setAdminStatus('Map player source is not available.', STATUS_CLASS.error);
             return;
         }
-
         let addedCount = 0;
         const existingKeys = new Set(state.registrations.map((item) => getPlayerKey(item)));
 
@@ -487,9 +562,11 @@
                 characterName: String(member.name || '').trim(),
                 role,
                 powerLevel: 0,
-                timeSlots: [],
                 isBackup: false,
                 canSub: true,
+                attendancePreference: 'both',
+                canAttendSaturday: true,
+                canAttendSunday: true,
                 createdAt: new Date().toISOString()
             };
 
@@ -654,7 +731,7 @@
         const poolByRole = {
             Tank: mains.filter((item) => item.role === 'Tank').concat(backups.filter((item) => item.role === 'Tank')),
             Healer: mains.filter((item) => item.role === 'Healer').concat(backups.filter((item) => item.role === 'Healer')),
-            DPS: mains.filter((item) => item.role === 'DPS').concat(backups.filter((item) => item.role === 'DPS'))
+            DPS: mains.filter((item) => isDpsVariantRole(item.role)).concat(backups.filter((item) => isDpsVariantRole(item.role)))
         };
 
         const maxByRole = [
@@ -778,6 +855,136 @@
         }
     }
 
+    async function generateSharePackage() {
+        if (!elements.shareAuthKey || !elements.sharePackageInput) {
+            return;
+        }
+
+        const passphrase = elements.shareAuthKey.value.trim();
+        if (!passphrase) {
+            setAdminStatus('Access key is required to generate a share package.', STATUS_CLASS.error);
+            return;
+        }
+
+        if (state.registrations.length === 0) {
+            setAdminStatus('No registrations available to share.', STATUS_CLASS.error);
+            return;
+        }
+
+        try {
+            const payload = {
+                version: 1,
+                createdAt: new Date().toISOString(),
+                registrations: state.registrations
+            };
+
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveShareKey(passphrase, salt);
+
+            const encoded = new TextEncoder().encode(JSON.stringify(payload));
+            const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+
+            const packageObject = {
+                v: 1,
+                alg: 'AES-GCM',
+                kdf: 'PBKDF2',
+                rounds: SHARE_PBKDF2_ROUNDS,
+                salt: toBase64(salt),
+                iv: toBase64(iv),
+                data: toBase64(encrypted)
+            };
+
+            elements.sharePackageInput.value = JSON.stringify(packageObject);
+            setAdminStatus('Encrypted share package generated. Share it only with authorized users.', STATUS_CLASS.success);
+        } catch (error) {
+            setAdminStatus(`Failed to generate share package: ${error.message}`, STATUS_CLASS.error);
+        }
+    }
+
+    async function copySharePackage() {
+        if (!elements.sharePackageInput) {
+            return;
+        }
+
+        const value = elements.sharePackageInput.value.trim();
+        if (!value) {
+            setAdminStatus('Generate or paste a share package first.', STATUS_CLASS.error);
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(value);
+            setAdminStatus('Share package copied to clipboard.', STATUS_CLASS.success);
+        } catch (error) {
+            setAdminStatus('Clipboard copy failed in this environment.', STATUS_CLASS.error);
+        }
+    }
+
+    async function importSharePackage() {
+        if (!elements.shareAuthKey || !elements.sharePackageInput) {
+            return;
+        }
+
+        const passphrase = elements.shareAuthKey.value.trim();
+        if (!passphrase) {
+            setAdminStatus('Access key is required to import a share package.', STATUS_CLASS.error);
+            return;
+        }
+
+        const rawPackage = elements.sharePackageInput.value.trim();
+        if (!rawPackage) {
+            setAdminStatus('Paste a share package before importing.', STATUS_CLASS.error);
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(rawPackage);
+            if (!parsed || parsed.v !== 1 || !parsed.salt || !parsed.iv || !parsed.data) {
+                throw new Error('Invalid package format');
+            }
+
+            const salt = fromBase64(parsed.salt);
+            const iv = fromBase64(parsed.iv);
+            const encrypted = fromBase64(parsed.data);
+
+            const key = await deriveShareKey(passphrase, salt);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+            const payload = JSON.parse(new TextDecoder().decode(decrypted));
+            const incoming = Array.isArray(payload.registrations) ? payload.registrations : [];
+
+            if (incoming.length === 0) {
+                setAdminStatus('Share package is valid but contains no registrations.', STATUS_CLASS.success);
+                return;
+            }
+
+            const existingKeys = new Set(state.registrations.map((item) => getPlayerKey(item)));
+            let addedCount = 0;
+
+            incoming.forEach((rawItem) => {
+                const normalized = normalizeSyncedRegistration(rawItem);
+                if (!normalized) {
+                    return;
+                }
+
+                const keyValue = getPlayerKey(normalized);
+                if (existingKeys.has(keyValue)) {
+                    return;
+                }
+
+                state.registrations.push(normalized);
+                existingKeys.add(keyValue);
+                addedCount += 1;
+            });
+
+            saveState();
+            renderAll();
+            setAdminStatus(`Imported ${addedCount} authorized registration(s).`, STATUS_CLASS.success);
+        } catch (error) {
+            setAdminStatus(`Failed to import share package: ${error.message}`, STATUS_CLASS.error);
+        }
+    }
+
     async function postTeamsToDiscord() {
         const message = buildDiscordMessage();
         if (!message) {
@@ -893,7 +1100,7 @@
 
         elements.registrantBody.innerHTML = sorted.map((entry) => {
             const flags = [entry.isBackup ? 'Backup' : 'Main', entry.canSub ? 'CanSub' : 'NoSub'].join(' / ');
-            const slots = entry.timeSlots.length > 0 ? entry.timeSlots.join(', ') : '-';
+            const availability = formatAvailabilityLabel(getAvailabilityPreference(entry));
 
             return `
                 <tr>
@@ -903,7 +1110,7 @@
                     <td>${entry.powerLevel}</td>
                     <td>${formatPercent(entry.reliability)}</td>
                     <td>${entry.priority.toFixed(1)}</td>
-                    <td>${escapeHtml(slots)}</td>
+                    <td>${escapeHtml(availability)}</td>
                     <td>${escapeHtml(flags)}</td>
                     <td>
                         <button type="button" class="btn-delete gw-delete-btn" data-action="delete" data-id="${entry.id}" title="Delete">🗑️</button>
@@ -1146,7 +1353,7 @@
     }
 
     function sortByRoleThenPriority(left, right) {
-        const roleOrder = { Tank: 1, Healer: 2, DPS: 3 };
+        const roleOrder = { Tank: 1, Healer: 2, DPS: 3, 'Cửu Kiếm': 3, 'Vô Danh': 3, 'Dù Quạt DPS': 3, 'Song Đao': 3 };
         const leftOrder = roleOrder[left.role] || 9;
         const rightOrder = roleOrder[right.role] || 9;
 
@@ -1157,11 +1364,72 @@
         return right.priority - left.priority;
     }
 
+    function isDpsVariantRole(roleValue) {
+        return DPS_VARIANT_ROLES.has(String(roleValue || '').trim());
+    }
+
     function normalizeRole(roleValue) {
-        if (roleValue === 'Tank' || roleValue === 'Healer' || roleValue === 'DPS') {
-            return roleValue;
+        const role = String(roleValue || '').trim();
+        if (role === 'Tank' || role === 'Healer' || isDpsVariantRole(role)) {
+            return role;
         }
         return 'DPS';
+    }
+
+    function normalizeAvailabilityPreference(value) {
+        const preference = String(value || '').trim().toLowerCase();
+        if (preference === 'saturday' || preference === 'sunday' || preference === 'both' || preference === 'none') {
+            return preference;
+        }
+        return 'both';
+    }
+
+    function availabilityPreferenceFromBooleans(canAttendSaturday, canAttendSunday) {
+        if (canAttendSaturday && canAttendSunday) {
+            return 'both';
+        }
+        if (canAttendSaturday) {
+            return 'saturday';
+        }
+        if (canAttendSunday) {
+            return 'sunday';
+        }
+        return 'none';
+    }
+
+    function availabilityBooleansFromPreference(preference) {
+        const normalized = normalizeAvailabilityPreference(preference);
+        return {
+            canAttendSaturday: normalized === 'saturday' || normalized === 'both',
+            canAttendSunday: normalized === 'sunday' || normalized === 'both'
+        };
+    }
+
+    function getAvailabilityPreference(entry) {
+        if (entry && typeof entry.attendancePreference === 'string' && entry.attendancePreference.trim()) {
+            return normalizeAvailabilityPreference(entry.attendancePreference);
+        }
+
+        const hasLegacyFlags = entry && (entry.canAttendSaturday !== undefined || entry.canAttendSunday !== undefined);
+        if (hasLegacyFlags) {
+            return availabilityPreferenceFromBooleans(!!entry.canAttendSaturday, !!entry.canAttendSunday);
+        }
+
+        return 'both';
+    }
+
+    function formatAvailabilityLabel(preference) {
+        const normalized = normalizeAvailabilityPreference(preference);
+        if (normalized === 'saturday') {
+            return 'Saturday';
+        }
+        if (normalized === 'sunday') {
+            return 'Sunday';
+        }
+        if (normalized === 'none') {
+            return 'None';
+        }
+        return 'Both';
     }
 
     function normalizeSyncedRegistration(rawItem) {
@@ -1177,6 +1445,14 @@
         }
 
         const parsedPower = Number.parseInt(rawItem.powerLevel, 10);
+        const hasAttendanceBooleans = rawItem.canAttendSaturday !== undefined || rawItem.canAttendSunday !== undefined;
+        const attendancePreference = normalizeAvailabilityPreference(
+            rawItem.attendancePreference ||
+            (hasAttendanceBooleans
+                ? availabilityPreferenceFromBooleans(!!rawItem.canAttendSaturday, !!rawItem.canAttendSunday)
+                : 'both')
+        );
+        const attendance = availabilityBooleansFromPreference(attendancePreference);
 
         return {
             id: createId(),
@@ -1186,11 +1462,11 @@
             characterName,
             role: normalizeRole(String(rawItem.role || '').trim()),
             powerLevel: Number.isNaN(parsedPower) || parsedPower < 0 ? 0 : parsedPower,
-            timeSlots: Array.isArray(rawItem.timeSlots)
-                ? rawItem.timeSlots.map((slot) => String(slot).trim()).filter(Boolean)
-                : [],
             isBackup: !!rawItem.isBackup,
             canSub: rawItem.canSub === undefined ? true : !!rawItem.canSub,
+            attendancePreference,
+            canAttendSaturday: attendance.canAttendSaturday,
+            canAttendSunday: attendance.canAttendSunday,
             createdAt: typeof rawItem.createdAt === 'string' ? rawItem.createdAt : new Date().toISOString()
         };
     }
@@ -1211,6 +1487,47 @@
         return `gw_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     }
 
+    async function deriveShareKey(passphrase, saltBytes) {
+        const material = await crypto.subtle.importKey(
+            'raw',
+            new TextEncoder().encode(passphrase),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveKey']
+        );
+
+        return crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: saltBytes,
+                iterations: SHARE_PBKDF2_ROUNDS,
+                hash: 'SHA-256'
+            },
+            material,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    function toBase64(input) {
+        const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 1) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+
+    function fromBase64(base64Value) {
+        const binary = atob(base64Value);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    }
+
     function setAdminStatus(message, statusType) {
         setStatus(elements.actionStatus, message, statusType);
     }
@@ -1225,6 +1542,12 @@
         }
 
         targetElement.className = 'import-status';
+        if (!message) {
+            targetElement.classList.add('is-empty');
+            targetElement.textContent = '';
+            return;
+        }
+
         if (statusType && STATUS_CLASS[statusType]) {
             targetElement.classList.add(statusType);
         }
