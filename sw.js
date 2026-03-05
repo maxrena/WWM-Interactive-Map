@@ -1,7 +1,8 @@
-const CACHE_NAME = 'wwm-gvg-cache-v3';
+const CACHE_NAME = 'wwm-gvg-cache-v4';
 const ASSETS = [
   './',
   './index.html',
+  './guild-war-user.html',
   './styles-fixed.css',
   './data.js',
   './app.js',

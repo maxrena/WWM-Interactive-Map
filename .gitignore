@@ -31,3 +31,4 @@ Thumbs.db
 .env.local
 config/google-sheets.json
 .electron-user-data/
+.electron-user-data-dev/

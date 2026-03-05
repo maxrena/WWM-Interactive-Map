@@ -35,15 +35,28 @@
             ? window.GUILD_WAR_CONFIG
             : {};
 
+        const appBaseUrl = typeof cfg.appBaseUrl === 'string' ? cfg.appBaseUrl.trim() : '';
+        const normalizedBase = appBaseUrl ? appBaseUrl.replace(/\/+$/, '') : '';
+        const memberAppUrl = typeof cfg.memberAppUrl === 'string' ? cfg.memberAppUrl.trim() : '';
+
         return {
             clientId: typeof cfg.discordClientId === 'string' ? cfg.discordClientId.trim() : '',
             redirectUri: typeof cfg.discordRedirectUri === 'string' ? cfg.discordRedirectUri.trim() : '',
-            appBaseUrl: typeof cfg.appBaseUrl === 'string' ? cfg.appBaseUrl.trim() : ''
+            appBaseUrl,
+            memberAppUrl: memberAppUrl || (normalizedBase ? `${normalizedBase}/guild-war-user.html` : ''),
+            registrationApiUrl: typeof cfg.registrationApiUrl === 'string' ? cfg.registrationApiUrl.trim() : ''
         };
     }
 
     async function init() {
-        if (!document.getElementById('tab-guild-war')) {
+        const hasGuildWarSurface = !!(
+            document.getElementById('tab-guild-war') ||
+            document.getElementById('tab-guild-war-admin') ||
+            document.getElementById('gwRegistrationForm') ||
+            document.getElementById('gwRegistrantBody')
+        );
+
+        if (!hasGuildWarSurface) {
             return;
         }
 
@@ -61,10 +74,13 @@
             discordLoginBtn: document.getElementById('gwDiscordLoginBtn'),
             discordLogoutBtn: document.getElementById('gwDiscordLogoutBtn'),
             authIdentity: document.getElementById('gwAuthIdentity'),
+            memberAppUrl: document.getElementById('gwMemberAppUrl'),
+            openMemberAppLink: document.getElementById('gwOpenMemberAppLink'),
             oauthClientId: document.getElementById('gwDiscordClientId'),
             oauthRedirectUri: document.getElementById('gwDiscordRedirectUri'),
             saveOauthConfigBtn: document.getElementById('gwSaveOauthConfigBtn'),
             importMapPlayersBtn: document.getElementById('gwImportMapPlayersBtn'),
+            syncRegistrationsBtn: document.getElementById('gwSyncRegistrationsBtn'),
             teamSize: document.getElementById('gwTeamSize'),
             tankPerTeam: document.getElementById('gwTankPerTeam'),
             healerPerTeam: document.getElementById('gwHealerPerTeam'),
@@ -101,6 +117,7 @@
         elements.discordLogoutBtn?.addEventListener('click', logoutDiscord);
         elements.saveOauthConfigBtn?.addEventListener('click', saveOauthConfig);
         elements.importMapPlayersBtn?.addEventListener('click', importFromMapPlayers);
+        elements.syncRegistrationsBtn?.addEventListener('click', syncRegistrationsFromApi);
         elements.generateTeamsBtn?.addEventListener('click', generateTeams);
         elements.clearGeneratedBtn?.addEventListener('click', clearGenerated);
         elements.postDiscordBtn?.addEventListener('click', postTeamsToDiscord);
@@ -129,6 +146,20 @@
 
         if (elements.oauthRedirectUri) {
             elements.oauthRedirectUri.value = deploymentConfig.redirectUri || state.oauthConfig.redirectUri || (window.location.origin + window.location.pathname);
+        }
+
+        if (elements.memberAppUrl) {
+            elements.memberAppUrl.value = deploymentConfig.memberAppUrl || '';
+        }
+
+        if (elements.openMemberAppLink) {
+            if (deploymentConfig.memberAppUrl) {
+                elements.openMemberAppLink.href = deploymentConfig.memberAppUrl;
+                elements.openMemberAppLink.setAttribute('aria-disabled', 'false');
+            } else {
+                elements.openMemberAppLink.href = '#';
+                elements.openMemberAppLink.setAttribute('aria-disabled', 'true');
+            }
         }
 
         resetMemberForm();
@@ -323,7 +354,7 @@
         }
     }
 
-    function handleRegistrationSubmit(event) {
+    async function handleRegistrationSubmit(event) {
         event.preventDefault();
 
         if (!currentDiscordUser) {
@@ -345,8 +376,51 @@
         state.registrations.push(registration);
         saveState();
         resetMemberForm(true);
-        setMemberStatus('Registration submitted.', STATUS_CLASS.success);
+
+        const syncResult = await submitRegistrationToApi(registration);
+        if (syncResult.ok) {
+            setMemberStatus(syncResult.message, STATUS_CLASS.success);
+        } else {
+            setMemberStatus(syncResult.message, STATUS_CLASS.error);
+        }
+
         renderAll();
+    }
+
+    async function submitRegistrationToApi(registration) {
+        const deploymentConfig = readDeploymentConfig();
+        const endpoint = deploymentConfig.registrationApiUrl;
+
+        if (!endpoint) {
+            return {
+                ok: true,
+                message: 'Registration submitted locally. Configure registrationApiUrl to sync to admin app.'
+            };
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ registration })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed (${response.status})`);
+            }
+
+            return {
+                ok: true,
+                message: 'Registration submitted and synced to hosted endpoint.'
+            };
+        } catch (error) {
+            return {
+                ok: false,
+                message: `Registration saved locally, but hosted sync failed: ${error.message}`
+            };
+        }
     }
 
     function readRegistrationForm() {
@@ -434,6 +508,66 @@
         saveState();
         setAdminStatus(`Imported ${addedCount} player(s) from map roster.`, STATUS_CLASS.success);
         renderAll();
+    }
+
+    async function syncRegistrationsFromApi() {
+        const deploymentConfig = readDeploymentConfig();
+        const endpoint = deploymentConfig.registrationApiUrl;
+
+        if (!endpoint) {
+            setAdminStatus('Set registrationApiUrl in guildwar.config.js before syncing.', STATUS_CLASS.error);
+            return;
+        }
+
+        setAdminStatus('Syncing registrations from hosted endpoint...', STATUS_CLASS.loading);
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed (${response.status})`);
+            }
+
+            const payload = await response.json();
+            const incoming = Array.isArray(payload)
+                ? payload
+                : (payload && Array.isArray(payload.registrations) ? payload.registrations : []);
+
+            if (incoming.length === 0) {
+                setAdminStatus('No registrations found at hosted endpoint.', STATUS_CLASS.success);
+                return;
+            }
+
+            const existingKeys = new Set(state.registrations.map((item) => getPlayerKey(item)));
+            let addedCount = 0;
+
+            incoming.forEach((rawItem) => {
+                const normalized = normalizeSyncedRegistration(rawItem);
+                if (!normalized) {
+                    return;
+                }
+
+                const key = getPlayerKey(normalized);
+                if (existingKeys.has(key)) {
+                    return;
+                }
+
+                state.registrations.push(normalized);
+                existingKeys.add(key);
+                addedCount += 1;
+            });
+
+            saveState();
+            renderAll();
+            setAdminStatus(`Hosted sync completed. Added ${addedCount} new registration(s).`, STATUS_CLASS.success);
+        } catch (error) {
+            setAdminStatus(`Hosted sync failed: ${error.message}`, STATUS_CLASS.error);
+        }
     }
 
     function clearRegistrations() {
@@ -1009,6 +1143,37 @@
             return roleValue;
         }
         return 'DPS';
+    }
+
+    function normalizeSyncedRegistration(rawItem) {
+        if (!rawItem || typeof rawItem !== 'object') {
+            return null;
+        }
+
+        const characterName = String(rawItem.characterName || '').trim();
+        const discordName = String(rawItem.discordName || rawItem.discord || '').trim();
+
+        if (!characterName || !discordName) {
+            return null;
+        }
+
+        const parsedPower = Number.parseInt(rawItem.powerLevel, 10);
+
+        return {
+            id: createId(),
+            discordUserId: String(rawItem.discordUserId || '').trim(),
+            discordName,
+            discordDisplayName: String(rawItem.discordDisplayName || discordName).trim(),
+            characterName,
+            role: normalizeRole(String(rawItem.role || '').trim()),
+            powerLevel: Number.isNaN(parsedPower) || parsedPower < 0 ? 0 : parsedPower,
+            timeSlots: Array.isArray(rawItem.timeSlots)
+                ? rawItem.timeSlots.map((slot) => String(slot).trim()).filter(Boolean)
+                : [],
+            isBackup: !!rawItem.isBackup,
+            canSub: rawItem.canSub === undefined ? true : !!rawItem.canSub,
+            createdAt: typeof rawItem.createdAt === 'string' ? rawItem.createdAt : new Date().toISOString()
+        };
     }
 
     function getPlayerKey(player) {

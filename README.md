@@ -9,6 +9,7 @@ WWM GvG Strategy is a desktop app for planning guild-vs-guild battle strategy. I
 - Objective, boss, tower, tree, and goose markers
 - Drawing tools with undo/redo and optional auto-delete
 - Export/import strategy data
+- Separate hosted Guild War member page with in-app Guild War admin tools
 
 ## Requirements
 
@@ -57,6 +58,8 @@ window.GUILD_WAR_CONFIG = {
 	discordClientId: 'YOUR_DISCORD_CLIENT_ID',
 	discordRedirectUri: 'https://your-app-name.onrender.com/',
 	appBaseUrl: 'https://your-app-name.onrender.com/',
+	memberAppUrl: 'https://your-app-name.onrender.com/guild-war-user.html',
+	registrationApiUrl: 'https://your-api-endpoint.example.com/registrations',
 	deployment: 'cloud'
 };
 ```
@@ -83,25 +86,50 @@ You can copy values from `guildwar.config.example.js`.
 7. Put that Client ID + Redirect URI into `guildwar.config.js`.
 8. Commit and push again so Render redeploys.
 
-### 3) Data behavior on hosted site
+### 3) Hosted member page
+
+- Host `guild-war-user.html` on your site and share that URL with members.
+- In the desktop app, the **Guild War User** tab reads `memberAppUrl` and opens that hosted page.
+- Keep **Guild War Admin** in the desktop app for team generation and management.
+
+### 4) Registration sync API (for user page -> admin app)
+
+To sync registrations from the hosted user page into the app, set `registrationApiUrl` to an endpoint that supports:
+
+- `POST { registration: {...} }` to receive a new registration from `guild-war-user.html`
+- `GET` returning either:
+	- `[{...}, {...}]`, or
+	- `{ "registrations": [{...}, {...}] }`
+
+Required registration fields:
+
+- `discordName`
+- `characterName`
+- `role` (`Tank`/`Healer`/`DPS`)
+- optional: `discordUserId`, `discordDisplayName`, `powerLevel`, `timeSlots`, `isBackup`, `canSub`, `createdAt`
+
+### 5) Data behavior on hosted site
 
 - App data is stored in browser `localStorage`.
 - Data is per-user and per-browser.
 - Data is not automatically shared across users.
 
-### 4) Sync approach (without database)
+### 6) Sync approach (without database)
 
 - Use Export/Import JSON in the app to move strategy data between users/devices.
+- Or use `registrationApiUrl` with the **Sync Hosted Registrations** button in **Guild War Admin**.
 
-### 5) First run checklist (cloud)
+### 7) First run checklist (cloud)
 
 1. Open your Render URL.
-2. Go to **Guild War** tab.
+2. Open `guild-war-user.html`.
 3. Click **Login with Discord**.
 4. Submit a member registration.
-5. Go to **Guild War Admin** tab to generate teams and manage attendance.
+5. Open desktop app -> **Guild War Admin**.
+6. Click **Sync Hosted Registrations**.
+7. Generate teams and manage attendance.
 
-### 6) Discord webhook safety note
+### 8) Discord webhook safety note
 
 - If a webhook URL is entered client-side, it can be exposed to users in the browser.
 - For public/shared use, prefer copy-and-paste posting or add a small secure server proxy later.

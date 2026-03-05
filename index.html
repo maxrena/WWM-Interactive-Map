@@ -34,7 +34,7 @@
         <div class="tab-bar" role="tablist" aria-label="Main tabs">
             <button class="tab-btn active" data-tab="map" role="tab" aria-selected="true">Map</button>
             <button class="tab-btn" data-tab="roster" role="tab" aria-selected="false">Roster</button>
-            <button class="tab-btn" data-tab="guild-war" role="tab" aria-selected="false">Guild War</button>
+            <button class="tab-btn" data-tab="guild-war" role="tab" aria-selected="false">Guild War User</button>
             <button class="tab-btn" data-tab="guild-war-admin" role="tab" aria-selected="false">Guild War Admin</button>
             <button class="tab-btn" data-tab="gacha" role="tab" aria-selected="false">Gacha 🎰</button>
         </div>
@@ -172,66 +172,20 @@
         <div class="tab-content" id="tab-guild-war" role="tabpanel" aria-hidden="true">
             <div class="guild-war-panel">
                 <div class="guild-war-header">
-                    <h2>Guild War Registration</h2>
-                    <p>Members: sign in with Discord, then submit your Guild War registration.</p>
+                    <h2>Guild War User Portal</h2>
+                    <p>Member registration is now hosted on a separate web page.</p>
                 </div>
 
                 <section class="guild-card guild-member-card">
-                    <h3>Discord Login</h3>
-                    <p class="guild-note">Login is required before submitting the registration form.</p>
-                    <div class="gw-auth-row" id="gwAuthRow">
-                        <div id="gwAuthIdentity" class="gw-auth-identity">Not signed in</div>
-                        <div class="gw-auth-actions">
-                            <button type="button" class="btn-primary" id="gwDiscordLoginBtn">Login with Discord</button>
-                            <button type="button" class="btn-secondary" id="gwDiscordLogoutBtn">Logout</button>
-                        </div>
+                    <h3>Hosted Registration</h3>
+                    <p class="guild-note">Share the hosted page URL with members so they can submit registrations online.</p>
+                    <div class="form-group">
+                        <label for="gwMemberAppUrl">Member page URL</label>
+                        <input type="text" id="gwMemberAppUrl" readonly placeholder="Set memberAppUrl in guildwar.config.js">
                     </div>
-                </section>
-
-                <section class="guild-card guild-member-card">
-                    <h3>Member Registration Form</h3>
-                    <form id="gwRegistrationForm" class="guild-form-grid">
-                        <div class="form-group">
-                            <label for="gwDiscordName">Discord</label>
-                            <input type="text" id="gwDiscordName" readonly placeholder="Login first">
-                        </div>
-                        <div class="form-group">
-                            <label for="gwCharacterName">Character Name</label>
-                            <input type="text" id="gwCharacterName" required maxlength="64" placeholder="In-game name">
-                        </div>
-                        <div class="form-group">
-                            <label for="gwRole">Role</label>
-                            <select id="gwRole" required>
-                                <option value="Tank">Tank</option>
-                                <option value="Healer">Healer</option>
-                                <option value="DPS">DPS</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="gwPowerLevel">Power Level</label>
-                            <input type="number" id="gwPowerLevel" required min="0" step="1" value="0">
-                        </div>
-
-                        <div class="form-group form-group-full">
-                            <label>Available Time Slots</label>
-                            <div class="gw-checkbox-row" id="gwTimeSlots">
-                                <label><input type="checkbox" value="18:00"> 18:00</label>
-                                <label><input type="checkbox" value="20:00"> 20:00</label>
-                                <label><input type="checkbox" value="22:00"> 22:00</label>
-                                <label><input type="checkbox" value="00:00"> 00:00</label>
-                            </div>
-                        </div>
-
-                        <div class="form-group form-group-inline">
-                            <label><input type="checkbox" id="gwIsBackup"> Backup</label>
-                            <label><input type="checkbox" id="gwCanSub"> Can sub last minute</label>
-                        </div>
-
-                        <div class="form-actions form-group-full">
-                            <button type="submit" class="btn-primary" id="gwSubmitRegistrationBtn">Submit Registration</button>
-                        </div>
-                    </form>
-                    <div id="gwMemberStatus" class="import-status" aria-live="polite"></div>
+                    <div class="gw-control-row">
+                        <a id="gwOpenMemberAppLink" class="btn-primary" href="#" target="_blank" rel="noopener noreferrer">Open Hosted Member Page</a>
+                    </div>
                 </section>
             </div>
         </div>
@@ -285,6 +239,7 @@
                             <button type="button" class="btn-primary" id="gwGenerateTeamsBtn">Generate Teams</button>
                             <button type="button" class="btn-secondary" id="gwClearGeneratedBtn">Clear Generated</button>
                             <button type="button" class="btn-secondary" id="gwImportMapPlayersBtn">Import from Map Players</button>
+                            <button type="button" class="btn-secondary" id="gwSyncRegistrationsBtn">Sync Hosted Registrations</button>
                         </div>
 
                         <div class="form-group">

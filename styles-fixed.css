@@ -1954,6 +1954,20 @@ textarea.input-full {
     transform: translateY(0);
 }
 
+a.btn-primary,
+a.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+a.btn-primary[aria-disabled="true"],
+a.btn-secondary[aria-disabled="true"] {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
 .btn-secondary {
     background: #e0e0e0;
     color: #333;
