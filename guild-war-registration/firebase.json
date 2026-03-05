@@ -1,0 +1,20 @@
+{
+  "hosting": {
+    "site": "guildwar-registration",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "README.md",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "/",
+        "destination": "/guild-war-user.html"
+      }
+    ]
+  }
+}

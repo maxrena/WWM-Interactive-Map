@@ -49,7 +49,9 @@
             appBaseUrl,
             memberAppUrl: memberAppUrl || (normalizedBase ? `${normalizedBase}/guild-war-user.html` : ''),
             adminAppUrl: adminAppUrl || (normalizedBase ? `${normalizedBase}/guild-war-admin.html` : ''),
-            registrationApiUrl: typeof cfg.registrationApiUrl === 'string' ? cfg.registrationApiUrl.trim() : ''
+            registrationApiUrl: typeof cfg.registrationApiUrl === 'string' ? cfg.registrationApiUrl.trim() : '',
+            firebaseDatabaseUrl: normalizeFirebaseDatabaseUrl(typeof cfg.firebaseDatabaseUrl === 'string' ? cfg.firebaseDatabaseUrl.trim() : ''),
+            firebaseRegistrationsPath: normalizeFirebaseRegistrationsPath(typeof cfg.firebaseRegistrationsPath === 'string' ? cfg.firebaseRegistrationsPath.trim() : '')
         };
     }
 
@@ -452,7 +454,7 @@
         saveState();
         resetMemberForm(true);
 
-        const syncResult = await submitRegistrationToApi(registration);
+        const syncResult = await submitRegistrationToRemote(registration);
         if (syncResult.ok) {
             setMemberStatus(syncResult.message, STATUS_CLASS.success);
         } else {
@@ -462,7 +464,12 @@
         renderAll();
     }
 
-    async function submitRegistrationToApi(registration) {
+    async function submitRegistrationToRemote(registration) {
+        const firebaseSyncResult = await upsertRegistrationToFirebase(registration);
+        if (firebaseSyncResult.enabled) {
+            return firebaseSyncResult;
+        }
+
         const deploymentConfig = readDeploymentConfig();
         const endpoint = deploymentConfig.registrationApiUrl;
 
@@ -498,6 +505,41 @@
         }
     }
 
+    async function upsertRegistrationToFirebase(registration) {
+        const deploymentConfig = readDeploymentConfig();
+        const endpoint = buildFirebaseRegistrationItemEndpoint(deploymentConfig, registration.id);
+
+        if (!endpoint) {
+            return { enabled: false, ok: true, message: '' };
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ...registration, id: registration.id })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Firebase request failed (${response.status})`);
+            }
+
+            return {
+                enabled: true,
+                ok: true,
+                message: 'Registration submitted and saved to Firebase.'
+            };
+        } catch (error) {
+            return {
+                enabled: true,
+                ok: false,
+                message: `Registration saved locally, but Firebase sync failed: ${error.message}`
+            };
+        }
+    }
+
     function readRegistrationForm() {
         const characterName = elements.characterName?.value.trim() || '';
         const role = normalizeRole(elements.role?.value || '');
@@ -527,7 +569,7 @@
         };
     }
 
-    function handleRegistrantTableClick(event) {
+    async function handleRegistrantTableClick(event) {
         const button = event.target.closest('button[data-action="delete"]');
         if (!button) {
             return;
@@ -540,7 +582,14 @@
 
         state.registrations = state.registrations.filter((item) => item.id !== id);
         saveState();
-        setAdminStatus('Registration removed.', STATUS_CLASS.success);
+
+        const deleteResult = await deleteRegistrationFromFirebase(id);
+        if (deleteResult.enabled && !deleteResult.ok) {
+            setAdminStatus(deleteResult.message, STATUS_CLASS.error);
+        } else {
+            setAdminStatus('Registration removed.', STATUS_CLASS.success);
+        }
+
         renderAll();
     }
 
@@ -594,7 +643,10 @@
         const endpoint = deploymentConfig.registrationApiUrl;
 
         if (!endpoint) {
-            setAdminStatus('Set registrationApiUrl in guildwar.config.js before syncing.', STATUS_CLASS.error);
+            const firebaseSyncResult = await syncRegistrationsFromFirebase();
+            if (!firebaseSyncResult.enabled) {
+                setAdminStatus('Set registrationApiUrl or firebaseDatabaseUrl in guildwar.config.js before syncing.', STATUS_CLASS.error);
+            }
             return;
         }
 
@@ -649,6 +701,65 @@
         }
     }
 
+    async function syncRegistrationsFromFirebase() {
+        const deploymentConfig = readDeploymentConfig();
+        const endpoint = buildFirebaseRegistrationsCollectionEndpoint(deploymentConfig);
+
+        if (!endpoint) {
+            return { enabled: false, ok: true };
+        }
+
+        setAdminStatus('Syncing registrations from Firebase...', STATUS_CLASS.loading);
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Firebase request failed (${response.status})`);
+            }
+
+            const payload = await response.json();
+            const incoming = flattenFirebaseRegistrations(payload);
+
+            if (incoming.length === 0) {
+                setAdminStatus('No registrations found in Firebase.', STATUS_CLASS.success);
+                return { enabled: true, ok: true };
+            }
+
+            const existingKeys = new Set(state.registrations.map((item) => getPlayerKey(item)));
+            let addedCount = 0;
+
+            incoming.forEach((rawItem) => {
+                const normalized = normalizeSyncedRegistration(rawItem);
+                if (!normalized) {
+                    return;
+                }
+
+                const key = getPlayerKey(normalized);
+                if (existingKeys.has(key)) {
+                    return;
+                }
+
+                state.registrations.push(normalized);
+                existingKeys.add(key);
+                addedCount += 1;
+            });
+
+            saveState();
+            renderAll();
+            setAdminStatus(`Firebase sync completed. Added ${addedCount} new registration(s).`, STATUS_CLASS.success);
+            return { enabled: true, ok: true };
+        } catch (error) {
+            setAdminStatus(`Firebase sync failed: ${error.message}`, STATUS_CLASS.error);
+            return { enabled: true, ok: false };
+        }
+    }
+
     async function copyMemberAppUrl() {
         const deploymentConfig = readDeploymentConfig();
         const memberUrl = deploymentConfig.memberAppUrl || elements.memberAppUrl?.value.trim() || '';
@@ -666,7 +777,7 @@
         }
     }
 
-    function clearRegistrations() {
+    async function clearRegistrations() {
         if (state.registrations.length === 0) {
             return;
         }
@@ -684,8 +795,69 @@
         };
 
         saveState();
-        setAdminStatus('All registrations cleared.', STATUS_CLASS.success);
+
+        const clearResult = await clearRegistrationsFromFirebase();
+        if (clearResult.enabled && !clearResult.ok) {
+            setAdminStatus(clearResult.message, STATUS_CLASS.error);
+        } else {
+            setAdminStatus('All registrations cleared.', STATUS_CLASS.success);
+        }
+
         renderAll();
+    }
+
+    async function deleteRegistrationFromFirebase(registrationId) {
+        const deploymentConfig = readDeploymentConfig();
+        const endpoint = buildFirebaseRegistrationItemEndpoint(deploymentConfig, registrationId);
+
+        if (!endpoint) {
+            return { enabled: false, ok: true };
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Firebase request failed (${response.status})`);
+            }
+
+            return { enabled: true, ok: true };
+        } catch (error) {
+            return {
+                enabled: true,
+                ok: false,
+                message: `Registration removed locally, but Firebase delete failed: ${error.message}`
+            };
+        }
+    }
+
+    async function clearRegistrationsFromFirebase() {
+        const deploymentConfig = readDeploymentConfig();
+        const endpoint = buildFirebaseRegistrationsCollectionEndpoint(deploymentConfig);
+
+        if (!endpoint) {
+            return { enabled: false, ok: true };
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Firebase request failed (${response.status})`);
+            }
+
+            return { enabled: true, ok: true };
+        } catch (error) {
+            return {
+                enabled: true,
+                ok: false,
+                message: `Registrations cleared locally, but Firebase clear failed: ${error.message}`
+            };
+        }
     }
 
     function clearGenerated() {
@@ -1455,7 +1627,7 @@
         const attendance = availabilityBooleansFromPreference(attendancePreference);
 
         return {
-            id: createId(),
+            id: String(rawItem.id || '').trim() || createId(),
             discordUserId: String(rawItem.discordUserId || '').trim(),
             discordName,
             discordDisplayName: String(rawItem.discordDisplayName || discordName).trim(),
@@ -1485,6 +1657,66 @@
 
     function createId() {
         return `gw_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    function normalizeFirebaseDatabaseUrl(value) {
+        if (!value) {
+            return '';
+        }
+        return String(value).replace(/\/+$/, '');
+    }
+
+    function normalizeFirebaseRegistrationsPath(value) {
+        const fallbackPath = 'guildwar/registrations';
+        if (!value) {
+            return fallbackPath;
+        }
+
+        return String(value)
+            .replace(/^\/+/, '')
+            .replace(/\/+$/, '') || fallbackPath;
+    }
+
+    function buildFirebaseRegistrationsCollectionEndpoint(deploymentConfig) {
+        if (!deploymentConfig.firebaseDatabaseUrl || !deploymentConfig.firebaseRegistrationsPath) {
+            return '';
+        }
+
+        return `${deploymentConfig.firebaseDatabaseUrl}/${deploymentConfig.firebaseRegistrationsPath}.json`;
+    }
+
+    function buildFirebaseRegistrationItemEndpoint(deploymentConfig, registrationId) {
+        if (!registrationId) {
+            return '';
+        }
+
+        const collectionEndpoint = buildFirebaseRegistrationsCollectionEndpoint(deploymentConfig);
+        if (!collectionEndpoint) {
+            return '';
+        }
+
+        return `${collectionEndpoint.replace(/\.json$/, '')}/${encodeURIComponent(registrationId)}.json`;
+    }
+
+    function flattenFirebaseRegistrations(payload) {
+        if (!payload) {
+            return [];
+        }
+
+        if (Array.isArray(payload)) {
+            return payload.filter((item) => !!item);
+        }
+
+        if (typeof payload !== 'object') {
+            return [];
+        }
+
+        return Object.entries(payload)
+            .filter(([, value]) => !!value && typeof value === 'object')
+            .map(([key, value]) => ({
+                ...value,
+                id: String(value.id || key)
+            }));
     }
 
     async function deriveShareKey(passphrase, saltBytes) {

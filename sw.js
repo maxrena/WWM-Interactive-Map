@@ -1,15 +1,15 @@
-const CACHE_NAME = 'wwm-gvg-cache-v8';
+const CACHE_NAME = 'wwm-gvg-cache-v9';
 const ASSETS = [
   './',
   './index.html',
-  './guild-war-user.html',
-  './guild-war-admin.html',
+  './guild-war-registration/guild-war-user.html',
+  './guild-war-registration/guild-war-admin.html',
   './styles-fixed.css',
   './data.js',
   './app.js',
-  './guildwar.config.js',
-  './guildwar.config.example.js',
-  './guildwar.js',
+  './guild-war-registration/guildwar.config.js',
+  './guild-war-registration/guildwar.config.example.js',
+  './guild-war-registration/guildwar.js',
   './gacha.js',
   './manifest.json',
   './images/map.png',

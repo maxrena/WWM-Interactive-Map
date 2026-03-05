@@ -11,6 +11,19 @@ WWM GvG Strategy is a desktop app for planning guild-vs-guild battle strategy. I
 - Export/import strategy data
 - Separate hosted Guild War member page with in-app Guild War admin tools
 
+## Standalone Guild War Deploy
+
+To deploy only Guild War registration/admin pages (without uploading the full app), use the dedicated folder:
+
+- `guild-war-registration/`
+
+This folder contains only Guild War assets and its own hosting config files.
+
+- Firebase deploy command (run inside `guild-war-registration/`):
+	- `firebase deploy --only hosting`
+
+This keeps deploy size small and avoids publishing unrelated app files.
+
 ## Requirements
 
 - Node.js (LTS recommended)
@@ -61,6 +74,8 @@ window.GUILD_WAR_CONFIG = {
 	memberAppUrl: 'https://your-app-name.onrender.com/guild-war-user',
 	adminAppUrl: 'https://your-app-name.onrender.com/guild-war-admin',
 	registrationApiUrl: 'https://your-api-endpoint.example.com/registrations',
+	firebaseDatabaseUrl: 'https://your-project-id-default-rtdb.firebaseio.com',
+	firebaseRegistrationsPath: 'guildwar/registrations',
 	deployment: 'cloud'
 };
 ```
@@ -108,6 +123,25 @@ Required registration fields:
 - `characterName`
 - `role` (`Tank`/`Healer`/`DPS`/`Cửu Kiếm`/`Vô Danh`/`Dù Quạt DPS`/`Song Đao`)
 - optional: `discordUserId`, `discordDisplayName`, `powerLevel`, `isBackup`, `canSub`, `attendancePreference`, `canAttendSaturday`, `canAttendSunday`, `createdAt`
+
+### 4b) Firebase Realtime Database (recommended for shared member list)
+
+You can store member registrations in Firebase Realtime Database without running a custom API.
+
+1. Create a Firebase project and enable **Realtime Database**.
+2. Copy your database URL (example: `https://your-project-id-default-rtdb.firebaseio.com`).
+3. Set these values in `guildwar.config.js`:
+	- `firebaseDatabaseUrl`
+	- `firebaseRegistrationsPath` (default: `guildwar/registrations`)
+4. Keep `registrationApiUrl` empty if you want Firebase to be the primary sync source.
+
+Behavior with Firebase configured:
+
+- Member form submits are written to Firebase and localStorage.
+- Admin **Sync Hosted Registrations** pulls from Firebase if `registrationApiUrl` is empty.
+- Admin delete/clear actions also update Firebase.
+
+Important: configure Firebase Realtime Database security rules for your deployment. Do not leave public write access enabled in production.
 
 ### 5) Data behavior on hosted site
 

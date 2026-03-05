@@ -5,5 +5,7 @@ window.GUILD_WAR_CONFIG = {
   memberAppUrl: 'https://your-app-name.onrender.com/guild-war-user',
   adminAppUrl: 'https://your-app-name.onrender.com/guild-war-admin',
   registrationApiUrl: 'https://your-api-endpoint.example.com/registrations',
+  firebaseDatabaseUrl: 'https://your-project-id-default-rtdb.firebaseio.com',
+  firebaseRegistrationsPath: 'guildwar/registrations',
   deployment: 'cloud'
 };
