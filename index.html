@@ -34,6 +34,8 @@
         <div class="tab-bar" role="tablist" aria-label="Main tabs">
             <button class="tab-btn active" data-tab="map" role="tab" aria-selected="true">Map</button>
             <button class="tab-btn" data-tab="roster" role="tab" aria-selected="false">Roster</button>
+            <button class="tab-btn" data-tab="guild-war" role="tab" aria-selected="false">Guild War</button>
+            <button class="tab-btn" data-tab="guild-war-admin" role="tab" aria-selected="false">Guild War Admin</button>
             <button class="tab-btn" data-tab="gacha" role="tab" aria-selected="false">Gacha 🎰</button>
         </div>
 
@@ -164,6 +166,216 @@
                         <tbody id="rosterTableBody"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-guild-war" role="tabpanel" aria-hidden="true">
+            <div class="guild-war-panel">
+                <div class="guild-war-header">
+                    <h2>Guild War Registration</h2>
+                    <p>Members: sign in with Discord, then submit your Guild War registration.</p>
+                </div>
+
+                <section class="guild-card guild-member-card">
+                    <h3>Discord Login</h3>
+                    <p class="guild-note">Login is required before submitting the registration form.</p>
+                    <div class="gw-auth-row" id="gwAuthRow">
+                        <div id="gwAuthIdentity" class="gw-auth-identity">Not signed in</div>
+                        <div class="gw-auth-actions">
+                            <button type="button" class="btn-primary" id="gwDiscordLoginBtn">Login with Discord</button>
+                            <button type="button" class="btn-secondary" id="gwDiscordLogoutBtn">Logout</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="guild-card guild-member-card">
+                    <h3>Member Registration Form</h3>
+                    <form id="gwRegistrationForm" class="guild-form-grid">
+                        <div class="form-group">
+                            <label for="gwDiscordName">Discord</label>
+                            <input type="text" id="gwDiscordName" readonly placeholder="Login first">
+                        </div>
+                        <div class="form-group">
+                            <label for="gwCharacterName">Character Name</label>
+                            <input type="text" id="gwCharacterName" required maxlength="64" placeholder="In-game name">
+                        </div>
+                        <div class="form-group">
+                            <label for="gwRole">Role</label>
+                            <select id="gwRole" required>
+                                <option value="Tank">Tank</option>
+                                <option value="Healer">Healer</option>
+                                <option value="DPS">DPS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="gwPowerLevel">Power Level</label>
+                            <input type="number" id="gwPowerLevel" required min="0" step="1" value="0">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label>Available Time Slots</label>
+                            <div class="gw-checkbox-row" id="gwTimeSlots">
+                                <label><input type="checkbox" value="18:00"> 18:00</label>
+                                <label><input type="checkbox" value="20:00"> 20:00</label>
+                                <label><input type="checkbox" value="22:00"> 22:00</label>
+                                <label><input type="checkbox" value="00:00"> 00:00</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group form-group-inline">
+                            <label><input type="checkbox" id="gwIsBackup"> Backup</label>
+                            <label><input type="checkbox" id="gwCanSub"> Can sub last minute</label>
+                        </div>
+
+                        <div class="form-actions form-group-full">
+                            <button type="submit" class="btn-primary" id="gwSubmitRegistrationBtn">Submit Registration</button>
+                        </div>
+                    </form>
+                    <div id="gwMemberStatus" class="import-status" aria-live="polite"></div>
+                </section>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-guild-war-admin" role="tabpanel" aria-hidden="true">
+            <div class="guild-war-panel">
+                <div class="guild-war-header">
+                    <h2>Guild War Admin</h2>
+                    <p>Officer-only controls: OAuth config, team generation, Discord posting, attendance and reliability.</p>
+                </div>
+
+                <div class="guild-war-grid">
+                    <section class="guild-card">
+                        <h3>OAuth Configuration</h3>
+                        <div class="form-group">
+                            <label for="gwDiscordClientId">Discord Client ID</label>
+                            <input type="text" id="gwDiscordClientId" placeholder="Discord application client id">
+                        </div>
+                        <div class="form-group">
+                            <label for="gwDiscordRedirectUri">Redirect URI</label>
+                            <input type="text" id="gwDiscordRedirectUri" placeholder="https://your-domain/">
+                        </div>
+                        <div class="gw-control-row">
+                            <button type="button" class="btn-primary" id="gwSaveOauthConfigBtn">Save OAuth Config</button>
+                        </div>
+                    </section>
+
+                    <section class="guild-card">
+                        <h3>Admin Controls</h3>
+
+                        <div class="gw-config-grid">
+                            <div class="form-group">
+                                <label for="gwTeamSize">Team Size</label>
+                                <input type="number" id="gwTeamSize" min="3" max="10" value="5">
+                            </div>
+                            <div class="form-group">
+                                <label for="gwTankPerTeam">Tank / Team</label>
+                                <input type="number" id="gwTankPerTeam" min="0" max="3" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="gwHealerPerTeam">Healer / Team</label>
+                                <input type="number" id="gwHealerPerTeam" min="0" max="3" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="gwDpsPerTeam">DPS / Team</label>
+                                <input type="number" id="gwDpsPerTeam" min="0" max="8" value="3">
+                            </div>
+                        </div>
+
+                        <div class="gw-control-row">
+                            <button type="button" class="btn-primary" id="gwGenerateTeamsBtn">Generate Teams</button>
+                            <button type="button" class="btn-secondary" id="gwClearGeneratedBtn">Clear Generated</button>
+                            <button type="button" class="btn-secondary" id="gwImportMapPlayersBtn">Import from Map Players</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="gwWebhookUrl">Discord Webhook URL</label>
+                            <input type="url" id="gwWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+                        </div>
+
+                        <div class="gw-control-row">
+                            <button type="button" class="btn-primary" id="gwPostDiscordBtn">Post Teams to Discord</button>
+                            <button type="button" class="btn-secondary" id="gwCopyDiscordBtn">Copy Discord Message</button>
+                        </div>
+
+                        <div id="gwActionStatus" class="import-status" aria-live="polite"></div>
+                    </section>
+                </div>
+
+                <section class="guild-card">
+                    <div class="guild-card-header-row">
+                        <h3>Registered Members</h3>
+                        <button type="button" class="btn-danger" id="gwClearRegistrationsBtn">Clear All Registrations</button>
+                    </div>
+                    <div class="guild-table-wrap">
+                        <table class="guild-table">
+                            <thead>
+                                <tr>
+                                    <th>Discord</th>
+                                    <th>Character</th>
+                                    <th>Role</th>
+                                    <th>Power</th>
+                                    <th>Reliability</th>
+                                    <th>Priority</th>
+                                    <th>Time Slots</th>
+                                    <th>Flags</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gwRegistrantBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="guild-card">
+                    <h3>Generated Teams</h3>
+                    <div id="gwTeamsContainer" class="gw-teams-grid"></div>
+                    <div class="gw-reserve-block">
+                        <h4>Reserve / Unassigned</h4>
+                        <ul id="gwReserveList" class="gw-reserve-list"></ul>
+                    </div>
+                </section>
+
+                <section class="guild-card">
+                    <h3>Attendance & Reliability</h3>
+                    <div class="gw-attendance-controls">
+                        <div class="form-group">
+                            <label for="gwEventDate">Event Date</label>
+                            <input type="date" id="gwEventDate">
+                        </div>
+                        <button type="button" class="btn-primary" id="gwSaveAttendanceBtn">Save Attendance Snapshot</button>
+                    </div>
+
+                    <div class="gw-attendance-grid">
+                        <div class="guild-table-wrap">
+                            <table class="guild-table">
+                                <thead>
+                                    <tr>
+                                        <th>Player</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gwAttendanceBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="guild-table-wrap">
+                            <table class="guild-table">
+                                <thead>
+                                    <tr>
+                                        <th>Player</th>
+                                        <th>Registered</th>
+                                        <th>Showed Up</th>
+                                        <th>Late</th>
+                                        <th>No Show</th>
+                                        <th>Reliability</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gwReliabilityBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
 
@@ -499,6 +711,8 @@
     
     <script src="data.js"></script>
     <script src="app.js"></script>
+    <script src="guildwar.config.js"></script>
+    <script src="guildwar.js"></script>
     <script src="gacha.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

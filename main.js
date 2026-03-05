@@ -28,11 +28,16 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle('app-version', () => app.getVersion());
 
-  if (!app.isPackaged) {
-    require('electron-reload')(__dirname, {
-      electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-      awaitWriteFinish: true,
-    });
+  if (!app.isPackaged && process.env.ELECTRON_HOT_RELOAD === '1') {
+    try {
+      require('electron-reload')(__dirname, {
+        electron: process.execPath,
+        awaitWriteFinish: true,
+        ignored: /(^|[\/\\])(dist|dist-new|node_modules|\.git|\.venv)([\/\\]|$)/,
+      });
+    } catch (error) {
+      console.warn('electron-reload disabled:', error && error.message ? error.message : error);
+    }
   }
 
   createWindow();

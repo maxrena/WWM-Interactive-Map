@@ -1,0 +1,6 @@
+services:
+  - type: static_site
+    name: wwm-interactive-map
+    env: static
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false

@@ -1,5 +1,6 @@
 # Build outputs
 dist/
+dist-new/
 *.exe
 *.msi
 
@@ -29,3 +30,4 @@ Thumbs.db
 *.log
 .env.local
 config/google-sheets.json
+.electron-user-data/
