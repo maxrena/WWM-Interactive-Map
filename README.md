@@ -48,9 +48,9 @@ The installer will be created in the `dist/` folder.
 
 This project can be deployed as a static site on Render without adding a backend API or database.
 
-### Prerequisite (one-time): configure `guildwar.config.js`
+### Prerequisite (one-time): configure `guild-war-registration/guildwar.config.js`
 
-Before deploying, edit `guildwar.config.js`:
+Before deploying, edit `guild-war-registration/guildwar.config.js`:
 
 ```js
 window.GUILD_WAR_CONFIG = {
@@ -61,7 +61,7 @@ window.GUILD_WAR_CONFIG = {
 };
 ```
 
-You can copy values from `guildwar.config.example.js`.
+You can copy values from `guild-war-registration/guildwar.config.example.js`.
 
 ### 1) Render setup
 
@@ -80,7 +80,7 @@ You can copy values from `guildwar.config.example.js`.
 5. Add redirect URI exactly as your deployed URL, for example:
 	- `https://your-app-name.onrender.com/`
 6. Save changes in Discord portal.
-7. Put that Client ID + Redirect URI into `guildwar.config.js`.
+7. Put that Client ID + Redirect URI into `guild-war-registration/guildwar.config.js`.
 8. Commit and push again so Render redeploys.
 
 ### 3) Data behavior on hosted site
